@@ -1,26 +1,518 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* ============================================================================
+   ESHANI Premium Color System
+   ============================================================================ */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Primary Colors */
+  --background: #000000;
+  --surface: #111111;
+  --card: #181818;
+  --primary: #D40000;
+  --primary-hover: #8B1111;
+  --primary-dark: #4E0707;
+
+  /* Text Colors */
+  --text-primary: #FFFFFF;
+  --text-secondary: #D9D9D9;
+  --text-muted: #9CA3AF;
+
+  /* Utilities */
+  --divider: rgba(255, 255, 255, 0.08);
+  --hover-state: rgba(255, 255, 255, 0.05);
+  --hover-state-secondary: rgba(255, 255, 255, 0.08);
+
+  /* Fonts */
+  --font-primary: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: var(--font-poppins), 'Inter', sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ============================================================================
+   Base Styles
+   ============================================================================ */
+
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #000000;
+  color: #FFFFFF;
+  font-family: var(--font-primary);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ============================================================================
+   Scrollbar Styles
+   ============================================================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111111;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================================================
+   Selection & Focus
+   ============================================================================ */
+
+::selection {
+  background: #D40000;
+  color: #FFFFFF;
+}
+
+:focus-visible {
+  outline: 2px solid #D40000;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============================================================================
+   Typography
+   ============================================================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  font-size: clamp(3rem, 7vw, 4.5rem);
+  font-weight: 800;
+}
+
+h2 {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+}
+
+h3 {
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  font-weight: 600;
+}
+
+h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+p {
+  font-family: var(--font-primary);
+  color: #D9D9D9;
+  line-height: 1.7;
+}
+
+/* ============================================================================
+   Links & Buttons
+   ============================================================================ */
+
+a {
+  transition: color 0.2s ease;
+}
+
+button {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:focus-visible {
+  outline: 2px solid #D40000;
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   Form Elements
+   ============================================================================ */
+
+input,
+textarea,
+select {
+  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: #FFFFFF;
+  font-family: var(--font-primary);
+  transition: all 0.2s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9CA3AF;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #D40000;
+  box-shadow: 0 0 0 3px rgba(212, 0, 0, 0.15);
+}
+
+/* ============================================================================
+   Custom Utility Classes
+   ============================================================================ */
+
+/* Glass Effect */
+.glass-effect {
+  background: rgba(17, 17, 17, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-effect-strong {
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, #D40000 0%, #FF4444 50%, #D40000 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Elevated Surface */
+.elevated-surface {
+  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Card with hover effect */
+.premium-card {
+  border-radius: 16px;
+  background: #181818;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: #1c1c1c;
+  transform: translateY(-2px);
+}
+
+.premium-card-hover:hover {
+  box-shadow: 0 20px 60px rgba(212, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Badge Styles */
+.badge-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  background: rgba(212, 0, 0, 0.12);
+  border: 1px solid rgba(212, 0, 0, 0.25);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #D40000;
+  letter-spacing: 0.01em;
+}
+
+.badge-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #D9D9D9;
+}
+
+/* Play Button */
+.play-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  background: #D40000;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.play-button:hover {
+  background: #8B1111;
+  box-shadow: 0 0 24px rgba(212, 0, 0, 0.5);
+  transform: scale(1.08);
+}
+
+.play-button:active {
+  transform: scale(0.95);
+}
+
+/* Divider */
+.divider-subtle {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Container */
+.container-premium {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1440px;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+@media (min-width: 1024px) {
+  .container-premium {
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+}
+
+/* Section Spacing */
+.section-spacing {
+  padding-top: 80px;
+  padding-bottom: 80px;
+}
+
+@media (min-width: 1024px) {
+  .section-spacing {
+    padding-top: 120px;
+    padding-bottom: 120px;
+  }
+}
+
+/* Smooth Hover State */
+.hover-lift {
+  transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Glow Effect */
+.glow-primary {
+  box-shadow: 0 0 40px rgba(212, 0, 0, 0.3), 0 0 80px rgba(212, 0, 0, 0.1);
+}
+
+.glow-subtle {
+  box-shadow: 0 0 20px rgba(212, 0, 0, 0.1);
+}
+
+/* ============================================================================
+   Keyframes
+   ============================================================================ */
+
+@keyframes waveformPulse {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+@keyframes glowOrb {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+@keyframes floatUp {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-16px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, #181818 25%, #222222 50%, #181818 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* ============================================================================
+   Clerk Auth Dark Theme — global overrides (cl-* class names)
+   These are needed because Clerk's own stylesheet has higher specificity
+   than the appearance.variables API in v7.
+   ============================================================================ */
+
+/* Card / root */
+.cl-rootBox { width: 100% !important; }
+.cl-card {
+  background: #111111 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Header */
+.cl-headerTitle { color: #ffffff !important; font-weight: 700 !important; }
+.cl-headerSubtitle { color: #9CA3AF !important; }
+
+/* Form labels */
+.cl-formFieldLabel { color: #D9D9D9 !important; font-weight: 500 !important; }
+.cl-formFieldHintText { color: #9CA3AF !important; }
+.cl-formFieldErrorText { color: #ff6666 !important; }
+
+/* Inputs */
+.cl-formFieldInput {
+  background: #1a1a1a !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+.cl-formFieldInput:focus {
+  border-color: #D40000 !important;
+  box-shadow: 0 0 0 3px rgba(212, 0, 0, 0.15) !important;
+}
+.cl-formFieldInput::placeholder { color: #9CA3AF !important; }
+
+/* Primary button */
+.cl-formButtonPrimary {
+  background: #D40000 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+.cl-formButtonPrimary:hover { background: #8B1111 !important; }
+
+/* Social buttons */
+.cl-socialButtonsBlockButton {
+  background: #1a1a1a !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+.cl-socialButtonsBlockButton:hover { background: #222222 !important; }
+.cl-socialButtonsBlockButtonText { color: #D9D9D9 !important; }
+
+/* Divider */
+.cl-dividerLine { background: rgba(255, 255, 255, 0.08) !important; }
+.cl-dividerText { color: #9CA3AF !important; }
+
+/* Footer / links */
+.cl-footerActionText { color: #9CA3AF !important; }
+.cl-footerActionLink { color: #D40000 !important; }
+.cl-footerActionLink:hover { color: #ff4444 !important; }
+.cl-footer { background: transparent !important; border-top-color: rgba(255, 255, 255, 0.06) !important; }
+
+/* Identity preview (after typing email) */
+.cl-identityPreviewText { color: #ffffff !important; }
+.cl-identityPreviewEditButton { color: #D40000 !important; }
+
+/* Alternative methods */
+.cl-alternativeMethodsBlockButton {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #D9D9D9 !important;
+  background: transparent !important;
+}
+.cl-alternativeMethodsBlockButton:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+/* Forgot password / misc links */
+.cl-formFieldAction { color: #D40000 !important; }
+.cl-formFieldAction:hover { color: #ff4444 !important; }
+
+/* Internal link text (e.g. "Sign up") */
+.cl-internal-b3fm6y { color: #D40000 !important; }
+
+/* UserProfile page overrides */
+.cl-navbar { background: #111111 !important; border-right-color: rgba(255, 255, 255, 0.06) !important; }
+.cl-navbarButton { color: #9CA3AF !important; }
+.cl-navbarButton:hover,
+.cl-navbarButton[data-active] { color: #ffffff !important; background: rgba(255, 255, 255, 0.06) !important; }
+.cl-pageScrollBox { background: #141414 !important; }
+.cl-profileSectionTitle,
+.cl-profileSectionTitleText { color: #ffffff !important; }
+.cl-profileSectionContent,
+.cl-profileSectionPrimaryButton { color: #9CA3AF !important; }
+.cl-accordionTriggerButton { color: #9CA3AF !important; }
+.cl-accordionTriggerButton:hover { color: #ffffff !important; }
+.cl-badge { background: rgba(212, 0, 0, 0.15) !important; color: #D40000 !important; }
+.cl-breadcrumbsItem,
+.cl-breadcrumbsItemDivider { color: #9CA3AF !important; }
+
+/* UserButton popover */
+.cl-userButtonPopoverCard {
+  background: #111111 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8) !important;
+}
+.cl-userButtonPopoverActions { background: #111111 !important; }
+.cl-userButtonPopoverActionButton {
+  color: #D9D9D9 !important;
+}
+.cl-userButtonPopoverActionButton:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+.cl-userButtonPopoverActionButtonText { color: inherit !important; }
+.cl-userButtonPopoverActionButtonIcon { color: #9CA3AF !important; }
+.cl-userButtonPopoverFooter {
+  background: #111111 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+.cl-userPreviewMainIdentifier { color: #ffffff !important; font-weight: 600 !important; }
+.cl-userPreviewSecondaryIdentifier { color: #9CA3AF !important; }
+
+/* ============================================================================
+   Reduced Motion Support
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

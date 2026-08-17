@@ -1,22 +1,9 @@
 /**
  * ESHANI Mock Data — real songs, real artist photos
  */
+import type { Track } from '@/types';
+export type { Track };
 
-// ── Track Interface ───────────────────────────────────────────────────────────
-export interface Track {
-  id: string;
-  title: string;
-  artist: string;
-  album?: string;
-  image: string;
-  audioUrl?: string;
-  youtubeId?: string;    // YouTube video ID — embed for free playback
-  isPremium?: boolean;   // true = platform-exclusive, subscription required
-  duration: number;      // seconds
-  plays?: number;
-  genre?: string;
-  releaseDate?: string;
-}
 
 export interface Artist {
   id: string;
@@ -90,7 +77,7 @@ export const SONGS_CATALOG: Track[] = [
     title: 'SWAY',
     artist: 'ESHANI',
     album: 'Asali',
-    image: yt('bKucvURJtaY'),
+    coverUrl: yt('bKucvURJtaY'),
     youtubeId: 'bKucvURJtaY',
     isPremium: false,
     duration: 202,

@@ -262,7 +262,7 @@ const PremiumNavbar: React.FC<PremiumNavbarProps> = ({ className = '' }) => {
                               className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[rgba(255,255,255,0.06)] transition-colors text-left group/sug"
                             >
                               <div className="relative w-9 h-9 flex-shrink-0 rounded-lg overflow-hidden bg-[#181818]">
-                                <Image src={song.image} alt={song.title} fill className="object-cover" sizes="36px" />
+                                <Image src={song.image ?? song.coverUrl ?? ''} alt={song.title} fill className="object-cover" sizes="36px" />
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/sug:opacity-100 flex items-center justify-center transition-opacity">
                                   <Play className="w-3 h-3 text-white fill-current" />
                                 </div>
@@ -474,7 +474,7 @@ const PremiumNavbar: React.FC<PremiumNavbarProps> = ({ className = '' }) => {
                           className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[rgba(255,255,255,0.06)] transition-colors text-left"
                         >
                           <div className="relative w-9 h-9 flex-shrink-0 rounded-lg overflow-hidden bg-[#181818]">
-                            <Image src={song.image} alt={song.title} fill className="object-cover" sizes="36px" />
+                            <Image src={song.image ?? song.coverUrl ?? ''} alt={song.title} fill className="object-cover" sizes="36px" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-white truncate">{song.title}</p>

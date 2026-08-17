@@ -87,7 +87,7 @@ const FeaturedSongBanner: React.FC<FeaturedSongBannerProps> = ({ songs }) => {
           className="absolute inset-0"
         >
           <Image
-            src={featured.image}
+            src={featured.image ?? featured.coverUrl ?? ''}
             alt=""
             fill
             className="object-cover blur-2xl scale-110 opacity-30"
@@ -220,7 +220,7 @@ const FeaturedSongBanner: React.FC<FeaturedSongBannerProps> = ({ songs }) => {
                 {/* Album art */}
                 <div className="relative w-11 h-11 flex-shrink-0 rounded-xl overflow-hidden">
                   <Image
-                    src={song.image}
+                    src={song.image ?? song.coverUrl ?? ''}
                     alt={song.title}
                     fill
                     className="object-cover"

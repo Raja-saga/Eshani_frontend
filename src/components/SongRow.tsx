@@ -145,7 +145,7 @@ const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false }
 
       {/* Thumbnail */}
       <div className="relative w-11 h-11 flex-shrink-0 rounded-lg overflow-hidden bg-[#181818]">
-        <Image src={track.image} alt={track.title} fill className="object-cover transition-transform duration-300 group-hover:scale-110" sizes="44px" />
+        <Image src={track.image ?? track.coverUrl ?? ''} alt={track.title} fill className="object-cover transition-transform duration-300 group-hover:scale-110" sizes="44px" />
         {isThisPlaying && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <div className="flex gap-[2px] items-end h-4">

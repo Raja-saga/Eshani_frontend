@@ -13,15 +13,17 @@ export interface Track {
   id: string;
   title: string;
   artist: string;
-  album: string;
-  duration: number; // in seconds
-  coverUrl: string;
-  audioUrl: string;
-  genre: string;
-  plays: number;
-  liked: boolean;
-  youtubeId?: string;   // YouTube video ID for embedded playback
-  isPremium?: boolean;  // true = platform-exclusive (requires subscription)
+  album?: string;
+  duration: number;
+  coverUrl?: string;
+  image?: string;
+  audioUrl?: string;
+  genre?: string;
+  plays?: number;
+  liked?: boolean;
+  youtubeId?: string;
+  isPremium?: boolean;
+  releaseDate?: string;
 }
 
 // Playlist Types

@@ -451,7 +451,7 @@ export default function EshaniPage() {
                 id={release.id}
                 title={release.title}
                 artist={release.artist}
-                image={release.image}
+                image={release.image ?? release.coverUrl ?? ''}
                 duration={release.duration}
                 audioUrl={release.audioUrl}
                 badge="New"

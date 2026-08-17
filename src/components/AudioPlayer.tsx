@@ -235,7 +235,7 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
             role="dialog" aria-modal="true" aria-label="Now Playing"
           >
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <Image src={currentTrack.image} alt="" fill className="object-cover opacity-[0.12] scale-110 blur-3xl" sizes="100vw" aria-hidden="true" />
+              <Image src={currentTrack.image ?? currentTrack.coverUrl ?? ''} alt="" fill className="object-cover opacity-[0.12] scale-110 blur-3xl" sizes="100vw" aria-hidden="true" />
               <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/90" />
             </div>
 
@@ -251,7 +251,7 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
 
             <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 gap-7 pb-10">
               <motion.div layoutId="player-album-art" className="w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/60">
-                <Image src={currentTrack.image} alt={`${currentTrack.title} cover`} width={288} height={288} className="w-full h-full object-cover" priority />
+                <Image src={currentTrack.image ?? currentTrack.coverUrl ?? ''} alt={`${currentTrack.title} cover`} width={288} height={288} className="w-full h-full object-cover" priority />
               </motion.div>
 
               <div className="text-center space-y-2 w-full max-w-sm">
@@ -333,7 +333,7 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
             <div onClick={() => setIsExpanded(true)} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer group/info"
               role="button" tabIndex={0} aria-label="Expand player" onKeyDown={(e) => e.key === 'Enter' && setIsExpanded(true)}>
               <motion.div layoutId="player-album-art" className="relative w-11 h-11 flex-shrink-0 rounded-xl overflow-hidden">
-                <Image src={currentTrack.image} alt={`${currentTrack.title} cover`} fill className="object-cover" sizes="44px" />
+                <Image src={currentTrack.image ?? currentTrack.coverUrl ?? ''} alt={`${currentTrack.title} cover`} fill className="object-cover" sizes="44px" />
               </motion.div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-[#FFFFFF] truncate group-hover/info:text-[#D40000] transition-colors">{currentTrack.title}</p>

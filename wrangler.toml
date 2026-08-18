@@ -1,0 +1,12 @@
+name                   = "eshani-platform"
+compatibility_date     = "2025-01-01"
+compatibility_flags    = ["nodejs_compat"]
+
+[[d1_databases]]
+binding       = "eshani_db"
+database_name = "eshani-db"
+database_id   = "f9ee14a5-9c88-4c64-94b0-8c34cea746dd"
+
+[[r2_buckets]]
+binding     = "AUDIO_BUCKET"
+bucket_name = "eshani-media"

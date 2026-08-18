@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -66,7 +66,7 @@ export default function LibraryPage() {
       artist: t.artist,
       album: t.album ?? '',
       duration: t.duration,
-      coverUrl: t.image,
+      image: t.image, coverUrl: t.image,
       audioUrl: t.audioUrl ?? '',
       genre: t.genre ?? '',
       plays: t.plays ?? 0,
@@ -119,7 +119,7 @@ export default function LibraryPage() {
       {/* Content */}
       <section className="container-premium pb-16">
         <AnimatePresence mode="wait">
-          {/* ── Liked Songs ── */}
+          {/* â”€â”€ Liked Songs â”€â”€ */}
           {activeTab === 'liked' && (
             <motion.div key="liked" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               {likedSongs.length === 0 ? (
@@ -156,7 +156,7 @@ export default function LibraryPage() {
             </motion.div>
           )}
 
-          {/* ── Recently Played ── */}
+          {/* â”€â”€ Recently Played â”€â”€ */}
           {activeTab === 'recent' && (
             <motion.div key="recent" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               {recentlyPlayed.length === 0 ? (
@@ -193,7 +193,7 @@ export default function LibraryPage() {
             </motion.div>
           )}
 
-          {/* ── Playlists ── */}
+          {/* â”€â”€ Playlists â”€â”€ */}
           {activeTab === 'playlists' && (
             <motion.div key="playlists" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               {/* Official playlists */}
@@ -263,7 +263,7 @@ export default function LibraryPage() {
             </motion.div>
           )}
 
-          {/* ── Saved Albums ── */}
+          {/* â”€â”€ Saved Albums â”€â”€ */}
           {activeTab === 'albums' && (
             <motion.div key="albums" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               {savedAlbums.length === 0 ? (
@@ -293,7 +293,7 @@ export default function LibraryPage() {
                         {album.title}
                       </p>
                       <p className="text-xs text-[#9CA3AF] mt-0.5">
-                        {album.trackCount} tracks · {formatDuration(album.duration)}
+                        {album.trackCount} tracks Â· {formatDuration(album.duration)}
                       </p>
                     </Link>
                   ))}
@@ -302,7 +302,7 @@ export default function LibraryPage() {
             </motion.div>
           )}
 
-          {/* ── Collections ── */}
+          {/* â”€â”€ Collections â”€â”€ */}
           {activeTab === 'collections' && (
             <motion.div key="collections" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -354,3 +354,4 @@ export default function LibraryPage() {
     </div>
   );
 }
+

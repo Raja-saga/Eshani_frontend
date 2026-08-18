@@ -15,8 +15,8 @@ export interface Track {
   artist: string;
   album?: string;
   duration: number;
-  coverUrl?: string;
-  image?: string;
+  image: string;       // primary — R2 cover URL
+  coverUrl?: string;   // legacy alias — same value as image
   audioUrl?: string;
   genre?: string;
   plays?: number;

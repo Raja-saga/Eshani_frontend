@@ -33,7 +33,7 @@ export default function AlbumDetailPage() {
       artist: t.artist,
       album: album.title,
       duration: t.duration,
-      coverUrl: t.image,
+      image: t.image, coverUrl: t.image,
       audioUrl: t.audioUrl ?? '',
       genre: t.genre ?? '',
       plays: t.plays ?? 0,

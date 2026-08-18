@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -55,7 +55,7 @@ function toStoreTrack(t: typeof ALL_SONGS[0], liked: boolean): StoreTrack {
     artist: t.artist,
     album: t.album ?? '',
     duration: t.duration,
-    coverUrl: t.image,
+    image: t.image, coverUrl: t.image,
     audioUrl: t.audioUrl ?? '',
     genre: t.genre ?? '',
     plays: t.plays ?? 0,
@@ -99,7 +99,7 @@ function DiscoverContent() {
             Discover
           </h1>
           <p className="text-[#9CA3AF] mt-2 text-base">
-            Explore the complete ESHANI catalog — every track, every album, every release
+            Explore the complete ESHANI catalog â€” every track, every album, every release
           </p>
         </motion.div>
 
@@ -281,7 +281,7 @@ function DiscoverContent() {
       <Section id="upcoming">
         <SectionHeader
           title="Coming Soon"
-          subtitle="Upcoming drops — get notified first"
+          subtitle="Upcoming drops â€” get notified first"
           seeAllHref="/upcoming"
         />
         <Carousel cardMinWidth={180}>
@@ -304,3 +304,4 @@ export default function DiscoverPage() {
     </Suspense>
   );
 }
+

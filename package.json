@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:schema": "wrangler d1 execute eshani-db --file migrations/001_schema.sql",
+    "db:seed": "wrangler d1 execute eshani-db --file migrations/002_seed.sql",
+    "db:schema:local": "wrangler d1 execute eshani-db --local --file migrations/001_schema.sql",
+    "db:seed:local": "wrangler d1 execute eshani-db --local --file migrations/002_seed.sql"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

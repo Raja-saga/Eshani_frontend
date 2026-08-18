@@ -53,7 +53,7 @@ export default function PlaylistDetailPage() {
       artist: t.artist,
       album: t.album ?? '',
       duration: t.duration,
-      coverUrl: t.image,
+      image: t.image, coverUrl: t.image,
       audioUrl: t.audioUrl ?? '',
       genre: t.genre ?? '',
       plays: t.plays ?? 0,

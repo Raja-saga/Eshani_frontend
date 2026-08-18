@@ -70,6 +70,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({
       artist,
       album: '',
       duration: duration ?? 0,
+      image: image,
       coverUrl: image,
       audioUrl: audioUrl ?? '',
       genre: '',

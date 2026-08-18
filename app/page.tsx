@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useCallback } from 'react';
 import { motion } from 'framer-motion';
@@ -26,7 +26,7 @@ import usePlayerStore from '@/store/playerStore';
 import useLibraryStore from '@/store/libraryStore';
 import { Track as StoreTrack } from '@/types';
 
-// ─── Animation Variants ───────────────────────────────────────────────────────
+// â”€â”€â”€ Animation Variants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: {
@@ -44,7 +44,7 @@ const gridVariants = {
   },
 };
 
-// ─── Section Wrapper ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Section Wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const Section = ({
   children,
   className = '',
@@ -59,14 +59,14 @@ const Section = ({
   </section>
 );
 
-// ─── Divider ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Divider â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SectionDivider = () => (
   <div className="container-premium">
     <div className="h-px bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.08)] to-transparent" />
   </div>
 );
 
-// ─── Play All Top Picks Button ────────────────────────────────────────────────
+// â”€â”€â”€ Play All Top Picks Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PlayAllButton = ({ tracks }: { tracks: typeof TOP_PICKS }) => {
   const { setQueue, playTrack } = usePlayerStore();
 
@@ -77,7 +77,7 @@ const PlayAllButton = ({ tracks }: { tracks: typeof TOP_PICKS }) => {
       artist: t.artist,
       album: t.album ?? '',
       duration: t.duration,
-      coverUrl: t.image,
+      image: t.image, coverUrl: t.image,
       audioUrl: t.audioUrl ?? '',
       genre: t.genre ?? '',
       plays: t.plays ?? 0,
@@ -101,7 +101,7 @@ const PlayAllButton = ({ tracks }: { tracks: typeof TOP_PICKS }) => {
   );
 };
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function HomePage() {
   const { setQueue, playTrack } = usePlayerStore();
   const { toggleLike, isLiked } = useLibraryStore();
@@ -113,7 +113,7 @@ export default function HomePage() {
       artist: t.artist,
       album: t.album ?? '',
       duration: t.duration,
-      coverUrl: t.image,
+      image: t.image, coverUrl: t.image,
       audioUrl: t.audioUrl ?? '',
       genre: t.genre ?? '',
       plays: t.plays ?? 0,
@@ -126,12 +126,12 @@ export default function HomePage() {
   return (
     <div className="bg-[#000000] text-[#FFFFFF] overflow-hidden">
 
-      {/* ── 1. HERO ─────────────────────────────────────────────────────── */}
+      {/* â”€â”€ 1. HERO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <PremiumHeroSection
         onPlayClick={handleStartListening}
       />
 
-      {/* ── 2. FEATURED SONGS BANNER ──────────────────────────────────────── */}
+      {/* â”€â”€ 2. FEATURED SONGS BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Section id="featured-songs">
         <motion.div
           variants={fadeUp}
@@ -157,7 +157,7 @@ export default function HomePage() {
 
       <SectionDivider />
 
-      {/* ── 3. TOP PICKS ──────────────────────────────────────────────────── */}
+      {/* â”€â”€ 3. TOP PICKS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Section id="top-picks" className="relative">
         {/* Subtle background glow */}
         <div
@@ -208,7 +208,7 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          {/* Song rows — two columns on large screens */}
+          {/* Song rows â€” two columns on large screens */}
           <motion.div
             variants={gridVariants}
             initial="hidden"
@@ -231,7 +231,7 @@ export default function HomePage() {
 
       <SectionDivider />
 
-      {/* ── 4. RECENT RELEASES ────────────────────────────────────────────── */}
+      {/* â”€â”€ 4. RECENT RELEASES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Section id="recent-releases" className="relative">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -262,7 +262,7 @@ export default function HomePage() {
                 id={release.id}
                 title={release.title}
                 artist={release.artist}
-                image={release.image ?? release.coverUrl ?? ''}
+                image={release.image}
                 duration={release.duration}
                 audioUrl={release.audioUrl}
                 badge="New"
@@ -277,7 +277,7 @@ export default function HomePage() {
 
       <SectionDivider />
 
-      {/* ── 5. UPCOMING RELEASES ──────────────────────────────────────────── */}
+      {/* â”€â”€ 5. UPCOMING RELEASES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Section id="upcoming-releases" className="relative">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -291,7 +291,7 @@ export default function HomePage() {
         <div className="relative z-10">
           <SectionHeader
             title="Coming Soon"
-            subtitle="Upcoming drops to add to your watchlist — get notified first"
+            subtitle="Upcoming drops to add to your watchlist â€” get notified first"
           />
 
           {/* Upcoming as a grid carousel */}
@@ -305,7 +305,7 @@ export default function HomePage() {
 
       <SectionDivider />
 
-      {/* ── 6. FEATURED PLAYLISTS ─────────────────────────────────────────── */}
+      {/* â”€â”€ 6. FEATURED PLAYLISTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Section id="featured-playlists" className="relative">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -342,7 +342,7 @@ export default function HomePage() {
 
       <SectionDivider />
 
-      {/* ── 7. STAY CONNECTED (Newsletter CTA) ───────────────────────────── */}
+      {/* â”€â”€ 7. STAY CONNECTED (Newsletter CTA) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Section id="stay-connected" className="relative overflow-hidden">
         {/* Animated background orb */}
         <motion.div
@@ -482,7 +482,7 @@ export default function HomePage() {
         </div>
       </Section>
 
-      {/* ── 8. FOOTER ─────────────────────────────────────────────────────── */}
+      {/* â”€â”€ 8. FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Footer />
 
       {/* Bottom padding for persistent audio player */}
@@ -490,3 +490,4 @@ export default function HomePage() {
     </div>
   );
 }
+

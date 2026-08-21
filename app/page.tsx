@@ -340,149 +340,101 @@ export default function HomePage() {
         </div>
       </Section>
 
-      <SectionDivider />
-
-      {/* â”€â”€ 7. STAY CONNECTED (Newsletter CTA) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <Section id="stay-connected" className="relative overflow-hidden">
-        {/* Animated background orb */}
-        <motion.div
-          animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.55, 0.3] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle, rgba(212,0,0,0.15) 0%, transparent 65%)',
-          }}
-          aria-hidden="true"
-        />
-
-        {/* Secondary decorative orb */}
-        <motion.div
-          animate={{ scale: [1.1, 1, 1.1], opacity: [0.15, 0.3, 0.15] }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-          className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle, rgba(212,0,0,0.08) 0%, transparent 65%)',
-          }}
-          aria-hidden="true"
-        />
-
-        <div className="relative z-10 max-w-3xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="space-y-8"
-          >
-            {/* Icon */}
-            <div className="flex justify-center">
-              <motion.div
-                animate={{ rotate: [0, 5, -5, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                className="w-20 h-20 rounded-3xl bg-[rgba(212,0,0,0.1)] border border-[rgba(212,0,0,0.2)] flex items-center justify-center shadow-lg shadow-[#D40000]/10"
-                aria-hidden="true"
-              >
-                <Music2 className="w-9 h-9 text-[#D40000]" />
-              </motion.div>
-            </div>
-
-            {/* Heading */}
-            <div className="space-y-4">
-              <h2
-                className="text-[2.25rem] lg:text-[3rem] font-black text-[#FFFFFF] leading-tight"
-                style={{ fontFamily: 'var(--font-poppins, sans-serif)' }}
-              >
-                Stay{' '}
-                <span className="gradient-text">Connected</span>
-              </h2>
-              <p className="text-lg text-[#D9D9D9] leading-relaxed max-w-xl mx-auto">
-                Get exclusive access to new releases, artist spotlights, and curated playlists
-                delivered directly to your inbox.
-              </p>
-            </div>
-
-            {/* Email form */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.15, duration: 0.5 }}
-              className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
-            >
-              <label htmlFor="cta-email" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="cta-email"
-                type="email"
-                placeholder="Enter your email address"
-                className="flex-1 h-14 px-5 rounded-2xl text-base bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white placeholder:text-[#9CA3AF] focus:border-[#D40000] focus:outline-none transition-all"
-                aria-label="Email address for newsletter subscription"
-              />
-              <motion.button
-                whileHover={{ scale: 1.04, boxShadow: '0 0 28px rgba(212,0,0,0.4)' }}
-                whileTap={{ scale: 0.97 }}
-                className="h-14 px-8 rounded-2xl bg-[#D40000] text-white font-semibold text-base hover:bg-[#8B1111] transition-all whitespace-nowrap flex items-center gap-2 justify-center shadow-lg shadow-[#D40000]/20"
-                aria-label="Subscribe to newsletter"
-              >
-                <Mail className="w-4 h-4" />
-                Subscribe
-              </motion.button>
-            </motion.div>
-
-            <p className="text-sm text-[#9CA3AF]">
-              We respect your privacy. No spam, ever. Unsubscribe at any time.
-            </p>
-
-            {/* Feature tags */}
-            <div className="flex flex-wrap justify-center gap-3 pt-2">
-              {[
-                { icon: Sparkles, label: 'Exclusive Content' },
-                { icon: Flame, label: 'Early Releases' },
-                { icon: Radio, label: 'Artist Spotlights' },
-              ].map(({ icon: Icon, label }) => (
-                <motion.span
-                  key={label}
-                  whileHover={{ scale: 1.05, borderColor: 'rgba(212,0,0,0.3)' }}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[rgba(255,255,255,0.08)] text-xs text-[#9CA3AF] bg-[rgba(255,255,255,0.03)] cursor-default"
-                >
-                  <Icon className="w-3.5 h-3.5 text-[#D40000]" aria-hidden="true" />
-                  {label}
-                </motion.span>
-              ))}
-            </div>
-
-            {/* Social links */}
-            <div className="flex items-center justify-center gap-4 pt-4">
-              <motion.a
-                href="https://www.instagram.com/eshanimusic/"
-                target="_blank"
-                rel="noopener noreferrer"
-                whileHover={{ scale: 1.08 }}
-                className="flex items-center gap-2 text-sm text-[#9CA3AF] hover:text-[#D40000] transition-colors"
-                aria-label="ESHANI on Instagram"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                Instagram
-              </motion.a>
-              <span className="w-px h-4 bg-[rgba(255,255,255,0.12)]" aria-hidden="true" />
-              <motion.a
-                href="https://www.youtube.com/channel/UCBE-u957n8OCA66RHIb-EyA"
-                target="_blank"
-                rel="noopener noreferrer"
-                whileHover={{ scale: 1.08 }}
-                className="flex items-center gap-2 text-sm text-[#9CA3AF] hover:text-[#D40000] transition-colors"
-                aria-label="ESHANI on YouTube"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                YouTube
-              </motion.a>
-            </div>
-          </motion.div>
-        </div>
-      </Section>
-
       {/* â”€â”€ 8. FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+
+      {/* Stay Connected */}
+      <section className="relative overflow-hidden py-20 lg:py-28">
+        <div
+          className="absolute inset-0 pointer-events-none"
+          aria-hidden="true"
+          style={{
+            background:
+              "radial-gradient(ellipse 60% 80% at 50% 50%, rgba(212,0,0,0.08) 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          aria-hidden="true"
+          style={{
+            background:
+              "radial-gradient(ellipse 40% 40% at 20% 80%, rgba(212,0,0,0.05) 0%, transparent 60%)",
+          }}
+        />
+
+        <div className="relative z-10 max-w-3xl mx-auto px-6 text-center space-y-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-xs text-[#9CA3AF] font-medium tracking-wide uppercase">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D40000] animate-pulse" />
+            Stay Connected
+          </div>
+
+          <h2
+            className="text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight"
+            style={{ fontFamily: "var(--font-poppins,sans-serif)" }}
+          >
+            Follow the{" "}
+            <span className="text-[#D40000]">journey</span>
+          </h2>
+
+          <p className="text-[#9CA3AF] text-base lg:text-lg leading-relaxed max-w-xl mx-auto">
+            New releases, live sessions, behind-the-scenes moments —
+            follow for all of it as it happens.
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-3 pt-2">
+            {[
+              {
+                label: "Instagram",
+                href: "https://instagram.com/eshaniofficial",
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="w-4 h-4">
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                    <circle cx="12" cy="12" r="4"/>
+                    <circle cx="17.5" cy="6.5" r="0.75" fill="currentColor" stroke="none"/>
+                  </svg>
+                ),
+              },
+              {
+                label: "YouTube",
+                href: "https://youtube.com/@eshani",
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <path d="M21.8 8s-.2-1.4-.8-2c-.8-.8-1.7-.8-2.1-.9C16.1 5 12 5 12 5s-4.1 0-6.9.1c-.4 0-1.3.1-2.1.9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.9.8 2.3.8C6.7 19 12 19 12 19s4.1 0 6.9-.1c.4 0 1.3-.1 2.1-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.7 14.7V9.3l5.6 2.7-5.6 2.7z"/>
+                  </svg>
+                ),
+              },
+              {
+                label: "X / Twitter",
+                href: "https://x.com/eshanimusic",
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.258 5.631 5.906-5.631zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                ),
+              },
+            ].map(({ label, href, icon }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-sm text-[#9CA3AF] hover:text-white hover:bg-white/[0.08] hover:border-white/[0.14] transition-all"
+              >
+                {icon}
+                {label}
+              </a>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-2 pt-1">
+            {["New music monthly", "Live sessions", "Exclusive drops", "Behind the scenes"].map(tag => (
+              <span key={tag} className="px-3 py-1 rounded-full text-xs text-[#4B5563] border border-white/[0.05] bg-white/[0.02]">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <Footer />
 
       {/* Bottom padding for persistent audio player */}

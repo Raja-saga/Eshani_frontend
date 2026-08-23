@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   PremiumHeroSection,
@@ -17,16 +17,26 @@ import {
 import {
   FEATURED_SONGS,
   TOP_PICKS,
-  RECENT_RELEASES,
-  UPCOMING_RELEASES,
   FEATURED_PLAYLISTS,
+  Track,
+  UpcomingRelease,
 } from '@/data/mockData';
-import { Flame, Sparkles, Radio, Mail, Play, Music2 } from 'lucide-react';
+import { Play } from 'lucide-react';
 import usePlayerStore from '@/store/playerStore';
 import useLibraryStore from '@/store/libraryStore';
 import { Track as StoreTrack } from '@/types';
+import { useLiveCatalog } from '@/hooks/useLiveCatalog';
 
-// â”€â”€â”€ Animation Variants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+interface SiteSettings {
+  instagram_url: string;
+  youtube_url: string;
+  spotify_url: string;
+  twitter_url: string;
+  apple_music_url: string;
+  new_release_banner: string;
+}
+
+// â"€â"€â"€ Animation Variants â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: {
@@ -44,7 +54,7 @@ const gridVariants = {
   },
 };
 
-// â”€â”€â”€ Section Wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Section Wrapper â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 const Section = ({
   children,
   className = '',
@@ -59,15 +69,15 @@ const Section = ({
   </section>
 );
 
-// â”€â”€â”€ Divider â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Divider â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 const SectionDivider = () => (
   <div className="container-premium">
     <div className="h-px bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.08)] to-transparent" />
   </div>
 );
 
-// â”€â”€â”€ Play All Top Picks Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const PlayAllButton = ({ tracks }: { tracks: typeof TOP_PICKS }) => {
+// â"€â"€â"€ Play All Top Picks Button â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+const PlayAllButton = ({ tracks }: { tracks: Track[] }) => {
   const { setQueue, playTrack } = usePlayerStore();
 
   const handlePlayAll = useCallback(() => {
@@ -101,37 +111,73 @@ const PlayAllButton = ({ tracks }: { tracks: typeof TOP_PICKS }) => {
   );
 };
 
-// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Main Page â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 export default function HomePage() {
   const { setQueue, playTrack } = usePlayerStore();
   const { toggleLike, isLiked } = useLibraryStore();
+  const { songs: allSongs, recentSongs, newUploads } = useLiveCatalog();
+
+  // Top Picks: new uploads first, then curated mockData TOP_PICKS
+  const topPickIds = new Set(TOP_PICKS.map((s) => s.id));
+  const liveTopPicks: Track[] = [
+    ...newUploads,
+    ...allSongs.filter((s) => topPickIds.has(s.id)),
+  ];
+
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>({
+    instagram_url: 'https://instagram.com/eshaniofficial',
+    youtube_url: 'https://youtube.com/@eshani',
+    spotify_url: 'https://open.spotify.com/artist/4CQMCs1zM49VQiI6Og0VWg',
+    twitter_url: 'https://x.com/eshanimusic',
+    apple_music_url: '',
+    new_release_banner: 'true',
+  });
+  const [upcomingReleases, setUpcomingReleases] = useState<UpcomingRelease[]>([]);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(d => setSiteSettings(prev => ({ ...prev, ...d.settings })))
+      .catch(() => {});
+    fetch('/api/upcoming')
+      .then(r => r.json())
+      .then(d => setUpcomingReleases(d.releases ?? []))
+      .catch(() => {});
+  }, []);
 
   const handleStartListening = useCallback(() => {
     const queue: StoreTrack[] = FEATURED_SONGS.map((t) => ({
-      id: t.id,
-      title: t.title,
-      artist: t.artist,
-      album: t.album ?? '',
-      duration: t.duration,
-      image: t.image, coverUrl: t.image,
-      audioUrl: t.audioUrl ?? '',
-      genre: t.genre ?? '',
-      plays: t.plays ?? 0,
-      liked: false,
+      id: t.id, title: t.title, artist: t.artist, album: t.album ?? '',
+      duration: t.duration, image: t.image, coverUrl: t.image,
+      audioUrl: t.audioUrl ?? '', genre: t.genre ?? '', plays: t.plays ?? 0, liked: false,
     }));
     setQueue(queue);
     playTrack(queue[0]);
   }, [setQueue, playTrack]);
 
+  const handlePlayPlaylist = useCallback((songIds: string[]) => {
+    const songs = allSongs.filter(s => songIds.includes(s.id))
+      .sort((a, b) => songIds.indexOf(a.id) - songIds.indexOf(b.id));
+    if (songs.length === 0) return;
+    const queue: StoreTrack[] = songs.map(t => ({
+      id: t.id, title: t.title, artist: t.artist, album: t.album ?? '',
+      duration: t.duration, image: t.image, coverUrl: t.image,
+      audioUrl: t.audioUrl ?? '', genre: t.genre ?? '', plays: t.plays ?? 0,
+      liked: isLiked(t.id),
+    }));
+    setQueue(queue);
+    playTrack(queue[0]);
+  }, [setQueue, playTrack, isLiked, allSongs]);
+
   return (
     <div className="bg-[#000000] text-[#FFFFFF] overflow-hidden">
 
-      {/* â”€â”€ 1. HERO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ 1. HERO â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <PremiumHeroSection
         onPlayClick={handleStartListening}
       />
 
-      {/* â”€â”€ 2. FEATURED SONGS BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ 2. FEATURED SONGS BANNER â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <Section id="featured-songs">
         <motion.div
           variants={fadeUp}
@@ -143,6 +189,8 @@ export default function HomePage() {
             title="Featured Songs"
             subtitle="Hand-picked tracks making waves this week"
             seeAllHref="/songs?section=featured"
+            itemCount={FEATURED_SONGS.length}
+            showThreshold={6}
           />
         </motion.div>
         <motion.div
@@ -157,7 +205,7 @@ export default function HomePage() {
 
       <SectionDivider />
 
-      {/* â”€â”€ 3. TOP PICKS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ 3. TOP PICKS â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <Section id="top-picks" className="relative">
         {/* Subtle background glow */}
         <div
@@ -197,18 +245,11 @@ export default function HomePage() {
               </p>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0 ml-4">
-              <PlayAllButton tracks={TOP_PICKS} />
-              <motion.a
-                href="/songs?section=top-picks"
-                whileHover={{ x: 4 }}
-                className="flex items-center gap-1.5 text-sm font-medium text-[#9CA3AF] hover:text-[#D40000] transition-colors duration-200 pb-1"
-              >
-                See All
-              </motion.a>
+              <PlayAllButton tracks={liveTopPicks} />
             </div>
           </motion.div>
 
-          {/* Song rows â€” two columns on large screens */}
+          {/* Song rows — two columns on large screens */}
           <motion.div
             variants={gridVariants}
             initial="hidden"
@@ -216,7 +257,7 @@ export default function HomePage() {
             viewport={{ once: true, margin: '-80px' }}
             className="grid grid-cols-1 lg:grid-cols-2 gap-1"
           >
-            {TOP_PICKS.map((track, i) => (
+            {liveTopPicks.map((track, i) => (
               <SongRow
                 key={track.id}
                 track={track}
@@ -231,7 +272,7 @@ export default function HomePage() {
 
       <SectionDivider />
 
-      {/* â”€â”€ 4. RECENT RELEASES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ 4. RECENT RELEASES â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <Section id="recent-releases" className="relative">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -247,6 +288,8 @@ export default function HomePage() {
             title="Recent Releases"
             subtitle="Fresh music from ESHANI"
             seeAllHref="/songs?section=recent"
+            itemCount={recentSongs.length}
+            showThreshold={6}
           />
 
           <motion.div
@@ -256,7 +299,7 @@ export default function HomePage() {
             viewport={{ once: true, margin: '-80px' }}
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5"
           >
-            {RECENT_RELEASES.map((release, i) => (
+            {recentSongs.slice(0, 6).map((release, i) => (
               <AlbumCard
                 key={release.id}
                 id={release.id}
@@ -277,35 +320,33 @@ export default function HomePage() {
 
       <SectionDivider />
 
-      {/* â”€â”€ 5. UPCOMING RELEASES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <Section id="upcoming-releases" className="relative">
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              'radial-gradient(ellipse 60% 60% at 10% 50%, rgba(212,0,0,0.04) 0%, transparent 60%)',
-          }}
-          aria-hidden="true"
-        />
+      {/* â"€â"€ 5. UPCOMING RELEASES (controlled by New Release Banner toggle in admin settings) â"€â"€ */}
+      {siteSettings.new_release_banner === 'true' && (
+        <>
+          <Section id="upcoming-releases" className="relative">
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: 'radial-gradient(ellipse 60% 60% at 10% 50%, rgba(212,0,0,0.04) 0%, transparent 60%)' }}
+              aria-hidden="true"
+            />
+            <div className="relative z-10">
+              <SectionHeader
+                title="Coming Soon"
+                subtitle="Upcoming drops — be the first to know"
+                seeAllHref={upcomingReleases.length > 3 ? '/upcoming' : undefined}
+              />
+              <Carousel cardMinWidth={180}>
+                {upcomingReleases.slice(0, 3).map((release, i) => (
+                  <UpcomingTrackCard key={release.id} release={release} index={i} />
+                ))}
+              </Carousel>
+            </div>
+          </Section>
+          <SectionDivider />
+        </>
+      )}
 
-        <div className="relative z-10">
-          <SectionHeader
-            title="Coming Soon"
-            subtitle="Upcoming drops to add to your watchlist â€” get notified first"
-          />
-
-          {/* Upcoming as a grid carousel */}
-          <Carousel cardMinWidth={180}>
-            {UPCOMING_RELEASES.map((release, i) => (
-              <UpcomingTrackCard key={release.id} release={release} index={i} />
-            ))}
-          </Carousel>
-        </div>
-      </Section>
-
-      <SectionDivider />
-
-      {/* â”€â”€ 6. FEATURED PLAYLISTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ 6. FEATURED PLAYLISTS â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <Section id="featured-playlists" className="relative">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -320,6 +361,9 @@ export default function HomePage() {
           <SectionHeader
             title="Featured Playlists"
             subtitle="Expertly curated collections for every mood and moment"
+            seeAllHref="/playlists"
+            itemCount={FEATURED_PLAYLISTS.length}
+            showThreshold={6}
           />
     
           <motion.div
@@ -334,13 +378,14 @@ export default function HomePage() {
                 key={playlist.id}
                 playlist={playlist}
                 index={i}
+                onPlay={() => handlePlayPlaylist(playlist.songIds ?? [])}
               />
             ))}
           </motion.div>
         </div>
       </Section>
 
-      {/* â”€â”€ 8. FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ 8. FOOTER â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
 
       {/* Stay Connected */}
       <section className="relative overflow-hidden py-20 lg:py-28">
@@ -382,36 +427,27 @@ export default function HomePage() {
 
           <div className="flex flex-wrap justify-center gap-3 pt-2">
             {[
-              {
+              siteSettings.instagram_url && {
                 label: "Instagram",
-                href: "https://instagram.com/eshaniofficial",
-                icon: (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="w-4 h-4">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                    <circle cx="12" cy="12" r="4"/>
-                    <circle cx="17.5" cy="6.5" r="0.75" fill="currentColor" stroke="none"/>
-                  </svg>
-                ),
+                href: siteSettings.instagram_url,
+                icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="w-4 h-4"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.75" fill="currentColor" stroke="none"/></svg>,
               },
-              {
+              siteSettings.youtube_url && {
                 label: "YouTube",
-                href: "https://youtube.com/@eshani",
-                icon: (
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                    <path d="M21.8 8s-.2-1.4-.8-2c-.8-.8-1.7-.8-2.1-.9C16.1 5 12 5 12 5s-4.1 0-6.9.1c-.4 0-1.3.1-2.1.9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.9.8 2.3.8C6.7 19 12 19 12 19s4.1 0 6.9-.1c.4 0 1.3-.1 2.1-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.7 14.7V9.3l5.6 2.7-5.6 2.7z"/>
-                  </svg>
-                ),
+                href: siteSettings.youtube_url,
+                icon: <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M21.8 8s-.2-1.4-.8-2c-.8-.8-1.7-.8-2.1-.9C16.1 5 12 5 12 5s-4.1 0-6.9.1c-.4 0-1.3.1-2.1.9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.9.8 2.3.8C6.7 19 12 19 12 19s4.1 0 6.9-.1c.4 0 1.3-.1 2.1-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.7 14.7V9.3l5.6 2.7-5.6 2.7z"/></svg>,
               },
-              {
+              siteSettings.spotify_url && {
+                label: "Spotify",
+                href: siteSettings.spotify_url,
+                icon: <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.622.622 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.623.623 0 01-.277-1.215c3.809-.87 7.076-.496 9.712 1.115a.623.623 0 01.207.857zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.52-.972c3.632-1.102 8.147-.568 11.233 1.328a.78.78 0 01.257 1.072zm.105-2.835c-3.223-1.914-8.54-2.09-11.618-1.156a.935.935 0 11-.543-1.79c3.532-1.073 9.404-.866 13.115 1.338a.936.936 0 01-.954 1.608z"/></svg>,
+              },
+              siteSettings.twitter_url && {
                 label: "X / Twitter",
-                href: "https://x.com/eshanimusic",
-                icon: (
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.258 5.631 5.906-5.631zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-                ),
+                href: siteSettings.twitter_url,
+                icon: <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.258 5.631 5.906-5.631zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
               },
-            ].map(({ label, href, icon }) => (
+            ].filter((x): x is { label: string; href: string; icon: React.JSX.Element } => !!x).map(({ label, href, icon }) => (
               <a
                 key={label}
                 href={href}

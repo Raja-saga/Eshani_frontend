@@ -11,7 +11,7 @@ import { formatDuration } from '@/utils/helpers';
 import useLibraryStore from '@/store/libraryStore';
 import usePlayerStore from '@/store/playerStore';
 import { Track as StoreTrack } from '@/types';
-import { ChevronLeft, Play, Bookmark, BookmarkCheck, Calendar, Music2 } from 'lucide-react';
+import { ChevronLeft, Play, Pause, Bookmark, BookmarkCheck, Calendar, Music2 } from 'lucide-react';
 
 export default function AlbumDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,10 +23,15 @@ export default function AlbumDetailPage() {
 
   const albumSongs = ALL_SONGS.filter((s) => album.songIds.includes(s.id));
   const { toggleLike, isLiked, toggleSaveAlbum, isAlbumSaved } = useLibraryStore();
-  const { setQueue, playTrack } = usePlayerStore();
+  const { setQueue, playTrack, currentTrack, isPlaying, setIsPlaying } = usePlayerStore();
+
+  const isAlbumActive = albumSongs.some((s) => s.id === currentTrack?.id);
+  const isAlbumPlaying = isAlbumActive && isPlaying;
   const saved = isAlbumSaved(album.id);
 
   const handlePlayAll = useCallback(() => {
+    if (isAlbumPlaying) { setIsPlaying(false); return; }
+    if (isAlbumActive) { setIsPlaying(true); return; }
     const queue: StoreTrack[] = albumSongs.map((t) => ({
       id: t.id,
       title: t.title,
@@ -41,7 +46,7 @@ export default function AlbumDetailPage() {
     }));
     setQueue(queue);
     if (queue[0]) playTrack(queue[0]);
-  }, [albumSongs, album.title, isLiked, setQueue, playTrack]);
+  }, [isAlbumActive, isAlbumPlaying, albumSongs, album.title, isLiked, setQueue, playTrack, setIsPlaying]);
 
   return (
     <div className="bg-[#000000] text-[#FFFFFF] min-h-screen">
@@ -50,9 +55,9 @@ export default function AlbumDetailPage() {
         <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
           <Link
             href="/albums"
-            className="inline-flex items-center gap-2 text-sm text-[#9CA3AF] hover:text-white transition-colors mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[rgba(255,255,255,0.07)] border border-[rgba(255,255,255,0.12)] text-sm font-semibold text-white hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.2)] transition-all mb-8"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-4 h-4 text-[#D40000]" />
             All Albums
           </Link>
         </motion.div>
@@ -116,8 +121,12 @@ export default function AlbumDetailPage() {
                 disabled={albumSongs.length === 0}
                 className="flex items-center gap-2 px-6 py-3 bg-[#D40000] text-white font-semibold rounded-xl hover:bg-[#8B1111] transition-all disabled:opacity-40"
               >
-                <Play className="w-4 h-4 fill-current" />
-                Play Album
+                {isAlbumPlaying ? (
+                  <Pause className="w-4 h-4 fill-current" />
+                ) : (
+                  <Play className="w-4 h-4 fill-current" />
+                )}
+                {isAlbumPlaying ? 'Pause' : 'Play Album'}
               </motion.button>
 
               <motion.button

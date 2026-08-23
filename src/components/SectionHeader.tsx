@@ -21,6 +21,9 @@ interface SectionHeaderProps {
   seeAllLabel?: string;
   accentLine?: boolean;
   className?: string;
+  /** Only show "See All" when itemCount exceeds this threshold */
+  itemCount?: number;
+  showThreshold?: number;
 }
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({
@@ -30,7 +33,12 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
   seeAllLabel = 'See All',
   accentLine = true,
   className = '',
+  itemCount,
+  showThreshold,
 }) => {
+  // Only show See All if explicitly given an href AND (no threshold set, or count exceeds threshold)
+  const showSeeAll = !!seeAllHref &&
+    (itemCount === undefined || showThreshold === undefined || itemCount > showThreshold);
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -65,7 +73,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
       </div>
 
       {/* See All Link */}
-      {seeAllHref && (
+      {showSeeAll && (
         <motion.a
           href={seeAllHref}
           whileHover={{ x: 4 }}

@@ -57,5 +57,5 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ success: true, songId }, { status: 201 });
+  return NextResponse.json({ success: true, songId, albumId: finalAlbumId ?? null }, { status: 201 });
 }

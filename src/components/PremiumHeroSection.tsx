@@ -16,6 +16,7 @@ import { motion, useMotionValue, useSpring, useTransform, type MotionValue } fro
 import { Play, Music, TrendingUp, Users } from 'lucide-react';
 import Image from 'next/image';
 import { ESHANI_PHOTOS } from '@/data/mockData';
+import usePlayerStore from '@/store/playerStore';
 
 const yt = (id: string) => `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
 
@@ -175,6 +176,7 @@ const PremiumHeroSection: React.FC<PremiumHeroProps> = ({
   onPlayClick,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { currentTrack, isPlaying } = usePlayerStore();
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
@@ -390,39 +392,41 @@ const PremiumHeroSection: React.FC<PremiumHeroProps> = ({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-                {/* Now Playing badge */}
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 }}
-                  className="absolute bottom-5 left-4 right-4 flex items-center gap-3 px-4 py-3 rounded-2xl glass-effect border border-[rgba(255,255,255,0.1)]"
-                  aria-label="Now playing: SWAY by ESHANI"
-                >
-                  <div className="relative w-9 h-9 rounded-lg overflow-hidden flex-shrink-0">
-                    <Image
-                      src={yt('bKucvURJtaY')}
-                      alt="SWAY"
-                      fill
-                      className="object-cover"
-                      sizes="36px"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-white truncate">SWAY</p>
-                    <p className="text-[10px] text-[#9CA3AF]">ESHANI</p>
-                  </div>
-                  <div className="flex gap-[2px] items-end h-4 flex-shrink-0" aria-hidden="true">
-                    {[0, 1, 2].map((i) => (
-                      <motion.div
-                        key={i}
-                        className="w-[3px] bg-[#D40000] rounded-full"
-                        animate={{ scaleY: [0.4, 1, 0.4] }}
-                        transition={{ duration: 0.7, delay: i * 0.15, repeat: Infinity }}
-                        style={{ height: '100%', transformOrigin: 'bottom' }}
+                {/* Now Playing badge — shows current track if something is playing */}
+                {currentTrack && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                    className="absolute bottom-5 left-4 right-4 flex items-center gap-3 px-4 py-3 rounded-2xl glass-effect border border-[rgba(255,255,255,0.1)]"
+                    aria-label={`Now playing: ${currentTrack.title} by ${currentTrack.artist}`}
+                  >
+                    <div className="relative w-9 h-9 rounded-lg overflow-hidden flex-shrink-0">
+                      <Image
+                        src={currentTrack.coverUrl ?? currentTrack.image}
+                        alt={currentTrack.title}
+                        fill
+                        className="object-cover"
+                        sizes="36px"
                       />
-                    ))}
-                  </div>
-                </motion.div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-white truncate">{currentTrack.title}</p>
+                      <p className="text-[10px] text-[#9CA3AF]">{currentTrack.artist}</p>
+                    </div>
+                    <div className="flex gap-[2px] items-end h-4 flex-shrink-0" aria-hidden="true">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="w-[3px] bg-[#D40000] rounded-full"
+                          animate={isPlaying ? { scaleY: [0.4, 1, 0.4] } : { scaleY: 0.4 }}
+                          transition={{ duration: 0.7, delay: i * 0.15, repeat: isPlaying ? Infinity : 0 }}
+                          style={{ height: '100%', transformOrigin: 'bottom' }}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
 

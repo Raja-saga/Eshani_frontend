@@ -225,7 +225,6 @@ const PremiumNavbar: React.FC<PremiumNavbarProps> = ({ className = '' }) => {
                   className="flex items-center gap-2 overflow-visible"
                 >
                   <div className="relative flex-1">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] pointer-events-none" />
                     <input
                       ref={searchRef}
                       type="search"
@@ -235,8 +234,8 @@ const PremiumNavbar: React.FC<PremiumNavbarProps> = ({ className = '' }) => {
                         setShowSuggestions(e.target.value.trim().length > 0);
                       }}
                       onFocus={() => searchQuery.trim() && setShowSuggestions(true)}
-                      placeholder="Search artists, songs..."
-                      className="w-full h-9 pl-10 pr-4 rounded-xl text-sm bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-[#FFFFFF] placeholder:text-[#9CA3AF] focus:border-[#D40000] focus:outline-none transition-all"
+                      placeholder="Songs, artists, genres…"
+                      className="w-full h-9 pl-4 pr-4 rounded-xl text-sm bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-[#FFFFFF] placeholder:text-[#9CA3AF] focus:border-[#D40000] focus:outline-none transition-all"
                       aria-label="Search music"
                       autoComplete="off"
                     />
@@ -441,7 +440,6 @@ const PremiumNavbar: React.FC<PremiumNavbarProps> = ({ className = '' }) => {
             >
               <form className="container-premium py-3" onSubmit={handleSearch}>
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] pointer-events-none" />
                   <input
                     type="search"
                     value={searchQuery}
@@ -449,8 +447,8 @@ const PremiumNavbar: React.FC<PremiumNavbarProps> = ({ className = '' }) => {
                       setSearchQuery(e.target.value);
                       setShowSuggestions(e.target.value.trim().length > 0);
                     }}
-                    placeholder="Search artists, songs, playlists..."
-                    className="w-full h-11 pl-11 pr-4 rounded-xl text-sm bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-white placeholder:text-[#9CA3AF] focus:border-[#D40000] focus:outline-none"
+                    placeholder="Songs, artists, genres…"
+                    className="w-full h-11 pl-4 pr-4 rounded-xl text-sm bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-white placeholder:text-[#9CA3AF] focus:border-[#D40000] focus:outline-none"
                     aria-label="Search music"
                     autoComplete="off"
                     autoFocus

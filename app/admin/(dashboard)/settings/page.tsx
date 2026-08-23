@@ -161,19 +161,6 @@ export default function AdminSettingsPage() {
         ))}
       </div>
 
-      {/* Email / Resend setup notice */}
-      <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-white">Email Setup</h2>
-        <p className="text-xs text-[#9CA3AF] leading-relaxed">
-          Contact form emails use <strong className="text-white">Resend</strong>. To enable:
-        </p>
-        <ol className="text-xs text-[#9CA3AF] space-y-1 list-decimal list-inside">
-          <li>Create a free account at <strong className="text-white">resend.com</strong></li>
-          <li>Copy your API key and add <code className="text-[#D40000] bg-black/40 px-1 rounded">RESEND_API_KEY=re_...</code> to <code className="text-white">.env.local</code></li>
-          <li>Verify <code className="text-white">eshani.admin01@gmail.com</code> as a recipient in Resend dashboard</li>
-          <li>Restart the dev server</li>
-        </ol>
-      </div>
     </div>
   );
 }

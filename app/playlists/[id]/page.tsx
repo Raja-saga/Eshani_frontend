@@ -6,11 +6,12 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SongRow, Footer } from '@/components';
-import { FEATURED_PLAYLISTS, ALL_SONGS } from '@/data/mockData';
+import { FEATURED_PLAYLISTS } from '@/data/mockData';
+import { useLiveCatalog } from '@/hooks/useLiveCatalog';
 import useLibraryStore from '@/store/libraryStore';
 import usePlayerStore from '@/store/playerStore';
 import { Track as StoreTrack } from '@/types';
-import { ChevronLeft, Play, ListMusic, Music2, Pencil, Check, X } from 'lucide-react';
+import { ChevronLeft, Play, Pause, ListMusic, Music2, Pencil, Check, X, Plus } from 'lucide-react';
 
 export default function PlaylistDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,12 +22,13 @@ export default function PlaylistDetailPage() {
     renamePlaylist,
     removeSongFromPlaylist,
   } = useLibraryStore();
-  const { setQueue, playTrack } = usePlayerStore();
+  const { setQueue, playTrack, currentTrack, isPlaying, setIsPlaying } = usePlayerStore();
 
   const [editingName, setEditingName] = useState(false);
   const [editValue, setEditValue] = useState('');
 
-  // Check official playlists first
+  const { songs: allSongs } = useLiveCatalog();
+
   const officialPlaylist = FEATURED_PLAYLISTS.find((p) => p.id === id);
   const localPlaylist = localPlaylists.find((p) => p.id === id);
 
@@ -40,13 +42,25 @@ export default function PlaylistDetailPage() {
   const playlistDescription = isLocal ? localPlaylist!.description : officialPlaylist!.description;
 
   const songIds = isLocal ? localPlaylist!.songIds : (officialPlaylist?.songIds ?? []);
-  const playlistSongs = ALL_SONGS.filter((s) => songIds.includes(s.id))
+  const playlistSongs = allSongs.filter((s) => songIds.includes(s.id))
     .sort((a, b) => songIds.indexOf(a.id) - songIds.indexOf(b.id));
 
   const officialImage = officialPlaylist?.image;
 
+  // Is any song from this playlist currently playing?
+  const isPlaylistActive = playlistSongs.some((s) => s.id === currentTrack?.id);
+  const isPlaylistPlaying = isPlaylistActive && isPlaying;
+
   const handlePlayAll = useCallback(() => {
     if (playlistSongs.length === 0) return;
+    if (isPlaylistPlaying) {
+      setIsPlaying(false);
+      return;
+    }
+    if (isPlaylistActive) {
+      setIsPlaying(true);
+      return;
+    }
     const queue: StoreTrack[] = playlistSongs.map((t) => ({
       id: t.id,
       title: t.title,
@@ -58,10 +72,12 @@ export default function PlaylistDetailPage() {
       genre: t.genre ?? '',
       plays: t.plays ?? 0,
       liked: isLiked(t.id),
+      youtubeId: t.youtubeId,
+      isPremium: t.isPremium,
     }));
     setQueue(queue);
     if (queue[0]) playTrack(queue[0]);
-  }, [isLocal, playlistSongs, isLiked, setQueue, playTrack]);
+  }, [isPlaylistActive, isPlaylistPlaying, playlistSongs, isLiked, setQueue, playTrack, setIsPlaying]);
 
   const handleRename = () => {
     if (editValue.trim() && localPlaylist) {
@@ -77,9 +93,9 @@ export default function PlaylistDetailPage() {
         <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
           <Link
             href="/playlists"
-            className="inline-flex items-center gap-2 text-sm text-[#9CA3AF] hover:text-white transition-colors mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[rgba(255,255,255,0.07)] border border-[rgba(255,255,255,0.12)] text-sm font-semibold text-white hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.2)] transition-all mb-8"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-4 h-4 text-[#D40000]" />
             All Playlists
           </Link>
         </motion.div>
@@ -165,17 +181,32 @@ export default function PlaylistDetailPage() {
               )}
             </div>
 
-            {playlistSongs.length > 0 && (
-              <motion.button
-                whileHover={{ scale: 1.04, boxShadow: '0 0 24px rgba(212,0,0,0.35)' }}
-                whileTap={{ scale: 0.97 }}
-                onClick={handlePlayAll}
-                className="self-start flex items-center gap-2 px-6 py-3 bg-[#D40000] text-white font-semibold rounded-xl hover:bg-[#8B1111] transition-all"
-              >
-                <Play className="w-4 h-4 fill-current" />
-                Play Playlist
-              </motion.button>
-            )}
+            <div className="flex items-center gap-3 flex-wrap">
+              {playlistSongs.length > 0 && (
+                <motion.button
+                  whileHover={{ scale: 1.04, boxShadow: '0 0 24px rgba(212,0,0,0.35)' }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handlePlayAll}
+                  className="flex items-center gap-2 px-6 py-3 bg-[#D40000] text-white font-semibold rounded-xl hover:bg-[#8B1111] transition-all"
+                >
+                  {isPlaylistPlaying ? (
+                    <Pause className="w-4 h-4 fill-current" />
+                  ) : (
+                    <Play className="w-4 h-4 fill-current" />
+                  )}
+                  {isPlaylistPlaying ? 'Pause' : 'Play Playlist'}
+                </motion.button>
+              )}
+              {isLocal && (
+                <Link
+                  href={`/songs?addTo=${id}`}
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[rgba(255,255,255,0.15)] text-sm font-semibold text-white hover:bg-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.25)] transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Songs
+                </Link>
+              )}
+            </div>
           </div>
         </motion.div>
       </div>
@@ -186,10 +217,20 @@ export default function PlaylistDetailPage() {
         {playlistSongs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
             <ListMusic className="w-10 h-10 text-[#9CA3AF]" />
-            <p className="text-[#9CA3AF]">This playlist is empty. Add songs from the Songs page.</p>
-            <Link href="/songs" className="text-sm text-[#D40000] hover:underline">
-              Browse songs
-            </Link>
+            <p className="text-[#9CA3AF]">This playlist is empty.</p>
+            {isLocal ? (
+              <Link
+                href={`/songs?addTo=${id}`}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#D40000] text-white text-sm font-semibold hover:bg-[#8B1111] transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                Add Songs
+              </Link>
+            ) : (
+              <Link href="/songs" className="text-sm text-[#D40000] hover:underline">
+                Browse songs
+              </Link>
+            )}
           </div>
         ) : (
           <div>

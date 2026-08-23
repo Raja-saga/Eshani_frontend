@@ -24,9 +24,9 @@ import {
 import {
   FEATURED_SONGS,
   TOP_PICKS,
-  RECENT_RELEASES,
   UPCOMING_RELEASES,
   ESHANI_PHOTOS,
+  ALBUMS,
 } from '@/data/mockData';
 import usePlayerStore from '@/store/playerStore';
 import useLibraryStore from '@/store/libraryStore';
@@ -436,7 +436,7 @@ export default function EshaniPage() {
           <SectionHeader
             title="Albums & Releases"
             subtitle="The complete ESHANI discography"
-            seeAllHref="/library"
+            seeAllHref="/albums"
           />
           <motion.div
             variants={gridVariants}
@@ -445,21 +445,16 @@ export default function EshaniPage() {
             viewport={{ once: true, margin: '-80px' }}
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5"
           >
-            {RECENT_RELEASES.map((release, i) => (
+            {ALBUMS.map((album, i) => (
               <AlbumCard
-                key={release.id}
-                id={release.id}
-                title={release.title}
-                artist={release.artist}
-                image={release.image}
-                duration={release.duration}
-                audioUrl={release.audioUrl}
-                badge="New"
-                badgeVariant="primary"
-                releaseDate={release.releaseDate}
+                key={album.id}
+                id={album.id}
+                title={album.title}
+                artist="ESHANI"
+                image={album.image}
+                trackCount={album.trackCount}
+                releaseDate={new Date(album.releaseDate).getFullYear().toString()}
                 index={i}
-                onPlay={() => handlePlay(release.title)}
-                onLike={() => console.info('Like:', release.title)}
               />
             ))}
           </motion.div>

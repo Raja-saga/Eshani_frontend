@@ -40,7 +40,7 @@ interface SearchBarProps {
  * - Accessible with proper ARIA labels
  */
 const SearchBar: React.FC<SearchBarProps> = ({
-  placeholder = 'Search songs, artists, playlists...',
+  placeholder = '   Search songs, playlists...',
   onSearch,
   className = '',
   showRecent = false,

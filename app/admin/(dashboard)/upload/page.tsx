@@ -2,11 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Upload, Music, Disc, Check, AlertCircle, ImageIcon, Loader2 } from 'lucide-react';
+import { Upload, Music, Disc, Check, AlertCircle, ImageIcon, Loader2, Plus, X } from 'lucide-react';
 
 type Mode = 'standalone' | 'add-to-album' | 'new-album';
 
 interface Album { id: string; title: string }
+
+interface UploadedSong {
+  title: string;
+  position: number;
+}
 
 const GENRE_SUGGESTIONS = ['R&B / Pop', 'Pop', 'Hip-Hop', 'Kannada Hip-Hop', 'Indie Pop', 'R&B', 'Electronic', 'Kannada Pop', 'Soul', 'Folk', 'Jazz', 'Classical', 'Afrobeats', 'Latin', 'Country'];
 
@@ -38,6 +43,12 @@ export default function AdminUploadPage() {
   const [error, setError]             = useState<string | null>(null);
   const [success, setSuccess]         = useState(false);
 
+  // Multi-song album state
+  const [createdAlbumId, setCreatedAlbumId]     = useState<string | null>(null);
+  const [createdAlbumTitle, setCreatedAlbumTitle] = useState<string | null>(null);
+  const [uploadedSongs, setUploadedSongs]       = useState<UploadedSong[]>([]);
+  const [addingAnother, setAddingAnother]       = useState(false);
+
   const audioRef = useRef<HTMLInputElement>(null);
   const coverRef = useRef<HTMLInputElement>(null);
 
@@ -66,10 +77,9 @@ export default function AdminUploadPage() {
     setCoverPreview(URL.createObjectURL(file));
   };
 
-  const resetForm = () => {
-    setTitle(''); setArtist('ESHANI'); setGenre(''); setDuration(0);
-    setIsPremium(false); setReleaseDate(''); setAlbumId('');
-    setNewAlbumTitle(''); setNewAlbumDesc('');
+  const resetSongFields = () => {
+    setTitle(''); setGenre(''); setDuration(0);
+    setIsPremium(false); setReleaseDate('');
     setAudioFile(null); setCoverFile(null);
     if (coverPreview) URL.revokeObjectURL(coverPreview);
     setCoverPreview(null);
@@ -77,40 +87,61 @@ export default function AdminUploadPage() {
     if (coverRef.current) coverRef.current.value = '';
   };
 
+  const resetAll = () => {
+    setArtist('ESHANI'); setAlbumId('');
+    setNewAlbumTitle(''); setNewAlbumDesc('');
+    setCreatedAlbumId(null); setCreatedAlbumTitle(null);
+    setUploadedSongs([]); setAddingAnother(false);
+    resetSongFields();
+  };
+
+  const handleAddAnother = () => {
+    setSuccess(false);
+    setAddingAnother(true);
+    // Switch to add-to-album mode with the just-created album pre-selected
+    setMode('add-to-album');
+    if (createdAlbumId) setAlbumId(createdAlbumId);
+    resetSongFields();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(false);
 
-    if (!title.trim())                              return setError('Song title is required');
-    if (!audioFile)                                 return setError('Please select an MP3 file');
-    if (!coverFile)                                 return setError('Please select a cover image');
-    if (mode === 'add-to-album' && !albumId)        return setError('Please select an album');
+    if (!title.trim())                                 return setError('Song title is required');
+    if (!audioFile)                                    return setError('Please select an MP3 file');
+    if (!coverFile)                                    return setError('Please select a cover image');
+    if (mode === 'add-to-album' && !albumId)           return setError('Please select an album');
     if (mode === 'new-album' && !newAlbumTitle.trim()) return setError('Album title is required');
 
     setUploading(true);
     try {
       const slug = toSlug(title.trim());
 
-      setProgress('Preparing upload…');
-      const presignRes = await fetch('/api/admin/presign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ audioSlug: slug, coverSlug: slug, coverType: coverFile.type }),
-      });
-      if (!presignRes.ok) {
-        const { error: e } = await presignRes.json();
-        throw new Error(e || 'Could not get upload URLs');
-      }
-      const { audioUploadUrl, coverUploadUrl, audioPublicUrl, coverPublicUrl } = await presignRes.json();
-
       setProgress('Uploading audio file…');
-      const ar = await fetch(audioUploadUrl, { method: 'PUT', headers: { 'Content-Type': 'audio/mpeg' }, body: audioFile });
-      if (!ar.ok) throw new Error('Audio upload to R2 failed');
+      const ar = await fetch('/api/admin/upload-file', {
+        method: 'POST',
+        headers: { 'x-file-key': `songs/${slug}.mp3`, 'x-content-type': 'audio/mpeg' },
+        body: audioFile,
+      });
+      if (!ar.ok) {
+        const { error: e } = await ar.json().catch(() => ({}));
+        throw new Error(e || 'Audio upload failed');
+      }
+      const { publicUrl: audioPublicUrl } = await ar.json();
 
       setProgress('Uploading cover image…');
-      const cr = await fetch(coverUploadUrl, { method: 'PUT', headers: { 'Content-Type': coverFile.type }, body: coverFile });
-      if (!cr.ok) throw new Error('Cover upload to R2 failed');
+      const cr = await fetch('/api/admin/upload-file', {
+        method: 'POST',
+        headers: { 'x-file-key': `covers/${slug}.jpg`, 'x-content-type': coverFile.type },
+        body: coverFile,
+      });
+      if (!cr.ok) {
+        const { error: e } = await cr.json().catch(() => ({}));
+        throw new Error(e || 'Cover upload failed');
+      }
+      const { publicUrl: coverPublicUrl } = await cr.json();
 
       setProgress('Saving to database…');
       const saveRes = await fetch('/api/admin/songs', {
@@ -134,9 +165,24 @@ export default function AdminUploadPage() {
         const { error: e } = await saveRes.json();
         throw new Error(e || 'Failed to save song record');
       }
+      const saveData = await saveRes.json();
+
+      // Track created album for multi-song mode
+      if (mode === 'new-album' && saveData.albumId && !createdAlbumId) {
+        setCreatedAlbumId(saveData.albumId);
+        setCreatedAlbumTitle(newAlbumTitle.trim());
+        // Add this new album to local albums list so "add-to-album" picker works
+        setAlbums(prev => [{ id: saveData.albumId, title: newAlbumTitle.trim() }, ...prev]);
+      }
+
+      const songPos = uploadedSongs.length + 1;
+      setUploadedSongs(prev => [...prev, { title: title.trim(), position: songPos }]);
 
       setSuccess(true);
-      resetForm();
+      resetSongFields();
+      if (mode !== 'new-album' && !addingAnother) {
+        setTitle(''); setAlbumId(''); setNewAlbumTitle(''); setNewAlbumDesc('');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
@@ -144,6 +190,9 @@ export default function AdminUploadPage() {
       setProgress('');
     }
   };
+
+  const isAlbumMode = mode === 'new-album' || addingAnother;
+  const currentAlbumLabel = createdAlbumTitle ?? (albums.find(a => a.id === albumId)?.title ?? '');
 
   // ── shared input class ────────────────────────────────────────────────────
   const input =
@@ -158,10 +207,55 @@ export default function AdminUploadPage() {
         <p className="text-[#9CA3AF] text-sm mt-1">Add new music to the ESHANI catalog.</p>
       </div>
 
+      {/* Success + multi-song prompt */}
       {success && (
-        <div className="flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-2xl px-4 py-3">
-          <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-          <p className="text-green-400 text-sm font-medium">Song uploaded and saved successfully!</p>
+        <div className="bg-green-500/10 border border-green-500/20 rounded-2xl px-4 py-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+            <p className="text-green-400 text-sm font-medium">
+              {uploadedSongs.length > 0
+                ? `"${uploadedSongs[uploadedSongs.length - 1].title}" uploaded successfully!`
+                : 'Song uploaded successfully!'}
+            </p>
+          </div>
+
+          {/* Uploaded songs list for album mode */}
+          {(isAlbumMode || addingAnother) && uploadedSongs.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-xs text-[#9CA3AF] font-medium">
+                {currentAlbumLabel ? `Album: "${currentAlbumLabel}"` : 'Album songs uploaded:'}
+              </p>
+              {uploadedSongs.map((s) => (
+                <div key={s.position} className="flex items-center gap-2 text-xs text-green-400">
+                  <Check className="w-3 h-3 flex-shrink-0" />
+                  <span className="text-[#9CA3AF]">{s.position}.</span>
+                  <span>{s.title}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Multi-song actions */}
+          {(mode === 'new-album' || addingAnother || (mode === 'add-to-album' && albumId)) && (
+            <div className="flex gap-3 pt-1">
+              <button
+                type="button"
+                onClick={handleAddAnother}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D40000]/15 border border-[#D40000]/30 text-[#D40000] text-sm font-medium hover:bg-[#D40000]/25 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                Add Another Song
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSuccess(false); resetAll(); setMode('standalone'); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-[#9CA3AF] text-sm hover:text-white hover:border-white/20 transition-all"
+              >
+                <X className="w-4 h-4" />
+                Done
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -172,34 +266,48 @@ export default function AdminUploadPage() {
         </div>
       )}
 
+      {/* Active album banner when adding more songs */}
+      {addingAnother && createdAlbumTitle && (
+        <div className="flex items-center gap-3 bg-[#141414] border border-[#D40000]/20 rounded-2xl px-4 py-3">
+          <Disc className="w-4 h-4 text-[#D40000] flex-shrink-0" />
+          <div className="min-w-0">
+            <p className="text-xs text-[#9CA3AF]">Adding to album</p>
+            <p className="text-sm font-semibold text-white truncate">{createdAlbumTitle}</p>
+          </div>
+          <span className="ml-auto text-xs text-[#9CA3AF] flex-shrink-0">{uploadedSongs.length} song{uploadedSongs.length !== 1 ? 's' : ''} so far</span>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-5">
 
-        {/* ── Mode selector ─────────────────────────────────────────────── */}
-        <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5 space-y-3">
-          <p className="text-sm font-semibold text-white">What are you adding?</p>
-          <div className="grid grid-cols-3 gap-2">
-            {([
-              { value: 'standalone',    label: 'Standalone Song',   Icon: Music  },
-              { value: 'add-to-album',  label: 'Song → Album',      Icon: Disc   },
-              { value: 'new-album',     label: 'New Album + Song',  Icon: Upload },
-            ] as const).map(({ value, label, Icon }) => (
-              <button
-                key={value} type="button" onClick={() => setMode(value)}
-                className={`flex flex-col items-center gap-2 p-3 rounded-xl border text-xs font-medium transition-all ${
-                  mode === value
-                    ? 'bg-[#D40000]/15 border-[#D40000]/30 text-white'
-                    : 'border-white/[0.06] text-[#9CA3AF] hover:border-white/10 hover:text-white'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${mode === value ? 'text-[#D40000]' : ''}`} />
-                {label}
-              </button>
-            ))}
+        {/* ── Mode selector — hidden while adding more songs to existing album */}
+        {!addingAnother && (
+          <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5 space-y-3">
+            <p className="text-sm font-semibold text-white">What are you adding?</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { value: 'standalone',    label: 'Standalone Song',   Icon: Music  },
+                { value: 'add-to-album',  label: 'Song → Album',      Icon: Disc   },
+                { value: 'new-album',     label: 'New Album + Song',  Icon: Upload },
+              ] as const).map(({ value, label, Icon }) => (
+                <button
+                  key={value} type="button" onClick={() => setMode(value)}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border text-xs font-medium transition-all ${
+                    mode === value
+                      ? 'bg-[#D40000]/15 border-[#D40000]/30 text-white'
+                      : 'border-white/[0.06] text-[#9CA3AF] hover:border-white/10 hover:text-white'
+                  }`}
+                >
+                  <Icon className={`w-5 h-5 ${mode === value ? 'text-[#D40000]' : ''}`} />
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* ── New album details ─────────────────────────────────────────── */}
-        {mode === 'new-album' && (
+        {/* ── New album details */}
+        {mode === 'new-album' && !addingAnother && (
           <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5 space-y-4">
             <p className="text-sm font-semibold text-white flex items-center gap-2">
               <Disc className="w-4 h-4 text-[#D40000]" /> New Album
@@ -216,8 +324,8 @@ export default function AdminUploadPage() {
           </div>
         )}
 
-        {/* ── Existing album picker ─────────────────────────────────────── */}
-        {mode === 'add-to-album' && (
+        {/* ── Existing album picker */}
+        {mode === 'add-to-album' && !addingAnother && (
           <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5 space-y-3">
             <p className="text-sm font-semibold text-white flex items-center gap-2">
               <Disc className="w-4 h-4 text-[#D40000]" /> Select Album
@@ -229,10 +337,14 @@ export default function AdminUploadPage() {
           </div>
         )}
 
-        {/* ── Song details ──────────────────────────────────────────────── */}
+        {/* ── Song details */}
         <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5 space-y-4">
           <p className="text-sm font-semibold text-white flex items-center gap-2">
-            <Music className="w-4 h-4 text-[#D40000]" /> Song Details
+            <Music className="w-4 h-4 text-[#D40000]" />
+            Song Details
+            {uploadedSongs.length > 0 && (
+              <span className="ml-auto text-xs text-[#9CA3AF] font-normal">Track {uploadedSongs.length + 1}</span>
+            )}
           </p>
 
           <div className="grid grid-cols-2 gap-4">
@@ -292,7 +404,7 @@ export default function AdminUploadPage() {
           </div>
         </div>
 
-        {/* ── File pickers ──────────────────────────────────────────────── */}
+        {/* ── File pickers */}
         <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5 space-y-4">
           <p className="text-sm font-semibold text-white">Files</p>
 

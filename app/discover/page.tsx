@@ -14,16 +14,15 @@ import {
   Footer,
 } from '@/components';
 import {
-  TOP_PICKS,
-  RECENT_RELEASES,
   UPCOMING_RELEASES,
   FEATURED_PLAYLISTS,
   ALBUMS,
-  ALL_SONGS,
+  TOP_PICKS,
 } from '@/data/mockData';
 import usePlayerStore from '@/store/playerStore';
 import useLibraryStore from '@/store/libraryStore';
 import { Track as StoreTrack } from '@/types';
+import { useLiveCatalog } from '@/hooks/useLiveCatalog';
 import { Search, Play, Music2, Disc3, ListMusic, Clock } from 'lucide-react';
 
 const fadeUp = {
@@ -48,18 +47,14 @@ const Divider = () => (
   </div>
 );
 
-function toStoreTrack(t: typeof ALL_SONGS[0], liked: boolean): StoreTrack {
+function toStoreTrack(t: { id: string; title: string; artist: string; album?: string; duration: number; image: string; audioUrl: string; genre?: string; plays?: number; youtubeId?: string; isPremium?: boolean }, liked: boolean): StoreTrack {
   return {
-    id: t.id,
-    title: t.title,
-    artist: t.artist,
-    album: t.album ?? '',
-    duration: t.duration,
+    id: t.id, title: t.title, artist: t.artist,
+    album: t.album ?? '', duration: t.duration,
     image: t.image, coverUrl: t.image,
-    audioUrl: t.audioUrl ?? '',
-    genre: t.genre ?? '',
-    plays: t.plays ?? 0,
-    liked,
+    audioUrl: t.audioUrl ?? '', genre: t.genre ?? '',
+    plays: t.plays ?? 0, liked,
+    youtubeId: t.youtubeId, isPremium: t.isPremium,
   };
 }
 
@@ -68,17 +63,23 @@ function DiscoverContent() {
   const q = searchParams.get('q')?.trim() ?? '';
   const { toggleLike, isLiked } = useLibraryStore();
   const { setQueue, playTrack } = usePlayerStore();
+  const { songs: allSongs, popularSongs, recentSongs, newUploads } = useLiveCatalog();
 
-  const handlePlayAll = useCallback((tracks: typeof ALL_SONGS) => {
+  // Top Picks: new uploads first, then curated mockData TOP_PICKS
+  const topPickIds = new Set(TOP_PICKS.map((s) => s.id));
+  const liveTopPicks = [
+    ...newUploads,
+    ...allSongs.filter((s) => topPickIds.has(s.id)),
+  ];
+
+  const handlePlayAll = useCallback((tracks: typeof allSongs) => {
     const queue = tracks.map((t) => toStoreTrack(t, isLiked(t.id)));
     setQueue(queue);
     if (queue[0]) playTrack(queue[0]);
-  }, [setQueue, playTrack, isLiked]);
-
-  const popularSongs = [...ALL_SONGS].sort((a, b) => (b.plays ?? 0) - (a.plays ?? 0));
+  }, [setQueue, playTrack, isLiked, allSongs]);
 
   const searchResults = q
-    ? ALL_SONGS.filter(
+    ? allSongs.filter(
         (t) =>
           t.title.toLowerCase().includes(q.toLowerCase()) ||
           t.genre?.toLowerCase().includes(q.toLowerCase()) ||
@@ -179,7 +180,7 @@ function DiscoverContent() {
             <motion.button
               whileHover={{ scale: 1.04, boxShadow: '0 0 20px rgba(212,0,0,0.3)' }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => handlePlayAll(TOP_PICKS)}
+              onClick={() => handlePlayAll(popularSongs)}
               className="flex items-center gap-2 px-5 py-2.5 bg-[#D40000] text-white text-sm font-semibold rounded-xl hover:bg-[#8B1111] transition-all"
             >
               <Play className="w-4 h-4 fill-current" />
@@ -216,7 +217,7 @@ function DiscoverContent() {
             <motion.button
               whileHover={{ scale: 1.04, boxShadow: '0 0 20px rgba(212,0,0,0.3)' }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => handlePlayAll(RECENT_RELEASES)}
+              onClick={() => handlePlayAll(recentSongs)}
               className="flex items-center gap-2 px-5 py-2.5 bg-[#D40000] text-white text-sm font-semibold rounded-xl hover:bg-[#8B1111] transition-all"
             >
               <Play className="w-4 h-4 fill-current" />
@@ -228,7 +229,7 @@ function DiscoverContent() {
           </div>
         </div>
         <motion.div variants={gridVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} className="grid grid-cols-1 lg:grid-cols-2 gap-1">
-          {RECENT_RELEASES.map((t, i) => (
+          {recentSongs.slice(0, 8).map((t, i) => (
             <SongRow key={t.id} track={t} index={i} liked={isLiked(t.id)} onLike={() => toggleLike(t.id)} />
           ))}
         </motion.div>
@@ -285,7 +286,7 @@ function DiscoverContent() {
           seeAllHref="/upcoming"
         />
         <Carousel cardMinWidth={180}>
-          {UPCOMING_RELEASES.map((r, i) => (
+          {UPCOMING_RELEASES.slice(0, 3).map((r, i) => (
             <UpcomingTrackCard key={r.id} release={r} index={i} />
           ))}
         </Carousel>

@@ -5,12 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SongRow, Footer } from '@/components';
-import { ALL_SONGS, ALBUMS, COLLECTIONS, FEATURED_PLAYLISTS } from '@/data/mockData';
+import { COLLECTIONS, FEATURED_PLAYLISTS } from '@/data/mockData';
 import useLibraryStore from '@/store/libraryStore';
 import { Heart, Clock, ListMusic, Disc3, Layers, Play, ArrowRight } from 'lucide-react';
 import usePlayerStore from '@/store/playerStore';
 import { Track as StoreTrack } from '@/types';
 import { formatDuration } from '@/utils/helpers';
+import { useLiveCatalog } from '@/hooks/useLiveCatalog';
+import { useLiveAlbums } from '@/hooks/useLiveAlbums';
 
 type Tab = 'liked' | 'recent' | 'playlists' | 'albums' | 'collections';
 
@@ -44,22 +46,26 @@ export default function LibraryPage() {
   } = useLibraryStore();
   const { setQueue, playTrack } = usePlayerStore();
 
+  // Live catalogs — DB songs + mockData fallback
+  const { songs: allSongs } = useLiveCatalog();
+  const { albums: allAlbums } = useLiveAlbums();
+
   const likedSongs = useMemo(
-    () => ALL_SONGS.filter((t) => likedSongIds.includes(t.id)),
-    [likedSongIds]
+    () => allSongs.filter((t) => likedSongIds.includes(t.id)),
+    [likedSongIds, allSongs]
   );
 
   const savedAlbums = useMemo(
-    () => ALBUMS.filter((a) => savedAlbumIds.includes(a.id)),
-    [savedAlbumIds]
+    () => allAlbums.filter((a) => savedAlbumIds.includes(a.id)),
+    [savedAlbumIds, allAlbums]
   );
 
   const recentlyPlayed = useMemo(() => {
-    const songMap = new Map(ALL_SONGS.map((s) => [s.id, s]));
-    return recentlyPlayedIds.map((id) => songMap.get(id)).filter(Boolean) as typeof ALL_SONGS;
-  }, [recentlyPlayedIds]);
+    const songMap = new Map(allSongs.map((s) => [s.id, s]));
+    return recentlyPlayedIds.map((id) => songMap.get(id)).filter(Boolean) as typeof allSongs;
+  }, [recentlyPlayedIds, allSongs]);
 
-  const handlePlaySongs = (songs: typeof ALL_SONGS) => {
+  const handlePlaySongs = (songs: typeof allSongs) => {
     const queue: StoreTrack[] = songs.map((t) => ({
       id: t.id,
       title: t.title,
@@ -281,19 +287,26 @@ export default function LibraryPage() {
                   {savedAlbums.map((album) => (
                     <Link key={album.id} href={`/albums/${album.id}`} className="group">
                       <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 bg-[#111111]">
-                        <Image
-                          src={album.image}
-                          alt={album.title}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          sizes="(max-width: 640px) 50vw, 25vw"
-                        />
+                        {album.image ? (
+                          <Image
+                            src={album.image}
+                            alt={album.title}
+                            fill
+                            unoptimized
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="(max-width: 640px) 50vw, 25vw"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Disc3 className="w-12 h-12 text-[#333]" />
+                          </div>
+                        )}
                       </div>
                       <p className="text-sm font-bold text-white truncate group-hover:text-[#D40000] transition-colors">
                         {album.title}
                       </p>
                       <p className="text-xs text-[#9CA3AF] mt-0.5">
-                        {album.trackCount} tracks Â· {formatDuration(album.duration)}
+                        {album.trackCount} tracks · {formatDuration(album.duration)}
                       </p>
                     </Link>
                   ))}
@@ -307,7 +320,7 @@ export default function LibraryPage() {
             <motion.div key="collections" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {COLLECTIONS.map((col) => {
-                  const colSongs = ALL_SONGS.filter((s) => col.songIds.includes(s.id));
+                  const colSongs = allSongs.filter((s) => col.songIds.includes(s.id));
                   return (
                     <motion.div
                       key={col.id}

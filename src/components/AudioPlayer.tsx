@@ -25,22 +25,33 @@ const WaveformBars: React.FC<{ isPlaying: boolean }> = ({ isPlaying }) => (
 
 const Slider: React.FC<{
   value: number; min?: number; max: number; step?: number;
-  onChange: (val: number) => void; accent?: boolean; ariaLabel: string; className?: string;
-}> = ({ value, min = 0, max, step = 0.01, onChange, accent = false, ariaLabel, className = '' }) => {
+  onChange: (val: number) => void; accent?: boolean; ariaLabel: string;
+  className?: string; seek?: boolean;
+}> = ({ value, min = 0, max, step = 0.01, onChange, accent = false, ariaLabel, className = '', seek = false }) => {
   const percent = max > 0 ? (value / max) * 100 : 0;
+  const trackH = seek ? 'h-1' : 'h-1.5';
+  const thumbSize = seek ? 'w-3 h-3' : 'w-3 h-3';
+  const thumbVisible = seek ? 'opacity-100' : 'opacity-0 group-hover/slider:opacity-100';
   return (
     <div className={`relative flex items-center ${className}`} style={{ height: '20px' }}>
       <div className="absolute inset-y-0 flex items-center w-full">
-        <div className="relative w-full h-1.5 rounded-full bg-[rgba(255,255,255,0.1)]">
-          <div className={`absolute left-0 top-0 h-full rounded-full transition-none ${accent ? 'bg-[#D40000]' : 'bg-[rgba(255,255,255,0.55)]'}`}
-            style={{ width: `${Math.min(100, percent)}%` }} />
-          <div className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full shadow-md transition-none ${accent ? 'bg-[#D40000]' : 'bg-white'} opacity-0 group-hover/slider:opacity-100`}
-            style={{ left: `calc(${Math.min(100, percent)}% - 6px)` }} />
+        <div className={`relative w-full ${trackH} rounded-full bg-[rgba(255,255,255,0.12)]`}>
+          <div
+            className={`absolute left-0 top-0 h-full rounded-full transition-none ${accent ? 'bg-[#D40000]' : 'bg-[rgba(255,255,255,0.55)]'}`}
+            style={{ width: `${Math.min(100, percent)}%` }}
+          />
+          <div
+            className={`absolute top-1/2 -translate-y-1/2 ${thumbSize} rounded-full shadow-md transition-all ${accent ? 'bg-[#D40000]' : 'bg-white'} ${thumbVisible} hover:scale-125`}
+            style={{ left: `calc(${Math.min(100, percent)}% - 6px)` }}
+          />
         </div>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value}
+      <input
+        type="range" min={min} max={max} step={step} value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="absolute inset-0 w-full opacity-0 cursor-pointer" aria-label={ariaLabel} style={{ zIndex: 10 }} />
+        className="absolute inset-0 w-full opacity-0 cursor-pointer"
+        aria-label={ariaLabel} style={{ zIndex: 10 }}
+      />
     </div>
   );
 };
@@ -359,15 +370,10 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
         className={`fixed bottom-0 left-0 right-0 z-40 player-glass border-t border-[rgba(255,255,255,0.06)] ${className}`}
         role="region" aria-label="Audio player"
       >
-        <div className="relative h-[3px] bg-[rgba(255,255,255,0.06)]">
-          <div className="h-full bg-[#D40000]" style={{ width: `${progressPercent}%` }} aria-hidden="true" />
-          <input type="range" min={0} max={currentTrack.duration || 1} step={0.1} value={currentTime}
-            onChange={(e) => handleSeek(parseFloat(e.target.value))}
-            className="absolute inset-0 w-full cursor-pointer" style={{ opacity: 0, height: '100%', zIndex: 10 }} aria-label="Track progress" />
-        </div>
-
-        <div className="container-premium py-3 lg:py-4">
+        <div className="container-premium pt-3 pb-2 lg:pt-3 lg:pb-3">
+          {/* Main row: track info | waveform | controls | seek (desktop) | volume+like (desktop) */}
           <div className="flex items-center gap-3 lg:gap-4">
+            {/* Track info */}
             <div onClick={() => setIsExpanded(true)} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer group/info"
               role="button" tabIndex={0} aria-label="Expand player" onKeyDown={(e) => e.key === 'Enter' && setIsExpanded(true)}>
               <motion.div layoutId="player-album-art" className="relative w-11 h-11 flex-shrink-0 rounded-xl overflow-hidden">
@@ -382,6 +388,7 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
 
             <div className="hidden sm:block flex-shrink-0"><WaveformBars isPlaying={isPlaying} /></div>
 
+            {/* Controls */}
             <div className="flex items-center gap-1 flex-shrink-0">
               <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={previousTrack}
                 className="p-2 rounded-xl text-[#9CA3AF] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-all" aria-label="Previous">
@@ -398,6 +405,16 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
               </motion.button>
             </div>
 
+            {/* Desktop seek bar — between controls and volume */}
+            <div className="hidden lg:flex items-center gap-2 flex-1 max-w-sm min-w-0">
+              <span className="text-[11px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-8 text-right">{formatDuration(currentTime)}</span>
+              <div className="flex-1 group/slider">
+                <Slider seek value={currentTime} max={currentTrack.duration || 1} step={0.1} onChange={handleSeek} accent ariaLabel="Track progress" />
+              </div>
+              <span className="text-[11px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-8">{formatDuration(currentTrack.duration)}</span>
+            </div>
+
+            {/* Like + Volume — desktop only */}
             <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
               <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                 onClick={() => currentTrack && toggleLike(currentTrack.id)}
@@ -413,10 +430,16 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
                   <Slider value={effectiveVolume} max={1} step={0.02} onChange={handleVolumeChange} ariaLabel="Volume" />
                 </div>
               </div>
-              <span className="text-xs text-[#9CA3AF] tabular-nums whitespace-nowrap min-w-[80px] text-right">
-                {formatDuration(currentTime)} / {formatDuration(currentTrack.duration)}
-              </span>
             </div>
+          </div>
+
+          {/* Mobile seek bar — shown below main row on small screens */}
+          <div className="lg:hidden flex items-center gap-2 mt-2 pb-1">
+            <span className="text-[10px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-7 text-right">{formatDuration(currentTime)}</span>
+            <div className="flex-1 group/slider">
+              <Slider seek value={currentTime} max={currentTrack.duration || 1} step={0.1} onChange={handleSeek} accent ariaLabel="Track progress" />
+            </div>
+            <span className="text-[10px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-7">{formatDuration(currentTrack.duration)}</span>
           </div>
         </div>
       </motion.div>

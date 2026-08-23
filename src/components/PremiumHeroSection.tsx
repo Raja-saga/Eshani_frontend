@@ -13,7 +13,7 @@
 
 import React, { useRef, useCallback } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, type MotionValue } from 'framer-motion';
-import { Play, Music, TrendingUp, Users, ChevronDown } from 'lucide-react';
+import { Play, Music, TrendingUp, Users } from 'lucide-react';
 import Image from 'next/image';
 import { ESHANI_PHOTOS } from '@/data/mockData';
 
@@ -439,16 +439,6 @@ const PremiumHeroSection: React.FC<PremiumHeroProps> = ({
         </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <motion.div
-        animate={{ y: [0, 8, 0] }}
-        transition={{ duration: 2.5, repeat: Infinity }}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[#9CA3AF]"
-        aria-hidden="true"
-      >
-        <span className="text-[10px] font-medium tracking-widest uppercase">Scroll</span>
-        <ChevronDown className="w-4 h-4" />
-      </motion.div>
     </section>
   );
 };

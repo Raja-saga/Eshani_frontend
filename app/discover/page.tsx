@@ -99,7 +99,7 @@ function DiscoverContent() {
             Discover
           </h1>
           <p className="text-[#9CA3AF] mt-2 text-base">
-            Explore the complete ESHANI catalog â€” every track, every album, every release
+            Explore the complete ESHANI catalog every track, every album, every release
           </p>
         </motion.div>
 

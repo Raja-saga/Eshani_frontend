@@ -189,16 +189,30 @@ select:focus {
 /* Glass Effect */
 .glass-effect {
   background: rgba(17, 17, 17, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-effect-strong {
-  background: rgba(10, 10, 10, 0.85);
-  backdrop-filter: blur(32px);
-  -webkit-backdrop-filter: blur(32px);
+  background: rgba(8, 8, 8, 0.82);
+  backdrop-filter: blur(64px) saturate(180%);
+  -webkit-backdrop-filter: blur(64px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Always-on light glass for navbar top state */
+.glass-effect-nav {
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(40px) saturate(160%);
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
+}
+
+/* Player bar — full blur, slightly tinted */
+.player-glass {
+  background: rgba(6, 6, 6, 0.88);
+  backdrop-filter: blur(72px) saturate(200%);
+  -webkit-backdrop-filter: blur(72px) saturate(200%);
 }
 
 /* Gradient Text */

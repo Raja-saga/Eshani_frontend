@@ -10,7 +10,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Music2, TrendingUp, Headphones } from 'lucide-react';
 import Image from 'next/image';
@@ -26,6 +26,13 @@ interface FeaturedSongBannerProps {
 const FeaturedSongBanner: React.FC<FeaturedSongBannerProps> = ({ songs }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const { playTrack, setQueue, currentTrack, isPlaying, setIsPlaying } = usePlayerStore();
+
+  // Keep the featured banner in sync when the player advances tracks via next/prev
+  useEffect(() => {
+    if (!currentTrack) return;
+    const idx = songs.findIndex((s) => s.id === currentTrack.id);
+    if (idx !== -1) setActiveIndex(idx);
+  }, [currentTrack?.id]); // eslint-disable-line
 
   const featured = songs[activeIndex];
   const isCurrentlyPlaying = currentTrack?.id === featured.id && isPlaying;

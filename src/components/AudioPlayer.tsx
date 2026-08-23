@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,6 +7,7 @@ import {
   RotateCcw, Shuffle, ChevronDown, ChevronUp, Heart, ListMusic, Repeat1,
 } from 'lucide-react';
 import Image from 'next/image';
+import { useAuth } from '@clerk/nextjs';
 import usePlayerStore from '@/store/playerStore';
 import useLibraryStore from '@/store/libraryStore';
 import { formatDuration } from '@/utils/helpers';
@@ -56,13 +57,21 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
 
   const {
     currentTrack, isPlaying, currentTime, volume, repeat, shuffle,
-    setIsPlaying, setCurrentTime, nextTrack, previousTrack, setRepeat, toggleShuffle, setVolume,
+    setIsPlaying, setCurrentTime, nextTrack, previousTrack, setRepeat, toggleShuffle, setVolume, clearQueue,
   } = usePlayerStore();
 
+  const { isSignedIn } = useAuth();
   const { toggleLike, isLiked, addToRecentlyPlayed } = useLibraryStore();
   const liked = currentTrack ? isLiked(currentTrack.id) : false;
   const isYouTubeTrack = !!currentTrack?.youtubeId;
   const effectiveVolume = isMuted ? 0 : volume;
+
+  // Clear player when user signs out
+  useEffect(() => {
+    if (isSignedIn === false) {
+      clearQueue();
+    }
+  }, [isSignedIn, clearQueue]);
 
   // Load YouTube IFrame API once
   useEffect(() => {
@@ -136,29 +145,59 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
     });
   }, [ytReady, currentTrack?.id]); // eslint-disable-line
 
-  // Play / pause
+  // HTML5 audio src sync — fires on track change
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !currentTrack) return;
+
+    if (currentTrack.youtubeId) {
+      // Switching to a YouTube track — silence the HTML5 element immediately
+      audio.pause();
+      audio.src = '';
+      return;
+    }
+
+    // Switching to HTML5 — pause any active YouTube player first
+    try { ytPlayerRef.current?.pauseVideo?.(); } catch {}
+
+    audio.src = currentTrack.audioUrl ?? '';
+    audio.load();
+
+    // Play when ready — read live store value so a mid-load pause is honoured
+    const tryPlay = () => {
+      if (usePlayerStore.getState().isPlaying) {
+        audio.play().catch(() => usePlayerStore.getState().setIsPlaying(false));
+      }
+    };
+    audio.addEventListener('canplay', tryPlay, { once: true });
+    return () => audio.removeEventListener('canplay', tryPlay);
+  }, [currentTrack?.id]); // eslint-disable-line
+
+  // Play / pause — fires when isPlaying flag changes
   useEffect(() => {
     if (isYouTubeTrack) {
+      // Ensure HTML5 is silent while YouTube is active
+      const audio = audioRef.current;
+      if (audio && !audio.paused) { audio.pause(); audio.src = ''; }
       try {
         if (isPlaying) ytPlayerRef.current?.playVideo?.();
         else ytPlayerRef.current?.pauseVideo?.();
       } catch {}
     } else {
+      // Ensure YouTube is always silent while HTML5 is active
+      try { ytPlayerRef.current?.pauseVideo?.(); } catch {}
       const audio = audioRef.current;
       if (!audio) return;
-      if (isPlaying) audio.play().catch(() => setIsPlaying(false));
-      else audio.pause();
+      if (isPlaying) {
+        // Only call play if audio src is loaded enough; otherwise canplay listener handles it
+        if (audio.src && audio.readyState >= 2) {
+          audio.play().catch(() => setIsPlaying(false));
+        }
+      } else {
+        audio.pause();
+      }
     }
   }, [isPlaying, isYouTubeTrack, setIsPlaying]);
-
-  // HTML5 audio src sync
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !currentTrack || currentTrack.youtubeId) return;
-    audio.src = currentTrack.audioUrl ?? '';
-    audio.load();
-    if (isPlaying) audio.play().catch(() => setIsPlaying(false));
-  }, [currentTrack?.id]); // eslint-disable-line
 
   // Volume sync
   useEffect(() => {
@@ -219,7 +258,6 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
   const progressPercent = currentTrack?.duration
     ? Math.min(100, (currentTime / currentTrack.duration) * 100) : 0;
 
-  // No track — render nothing (no idle bar)
   if (!currentTrack) return null;
 
   return (
@@ -291,7 +329,7 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
                   <SkipBack className="w-7 h-7" />
                 </motion.button>
                 <motion.button whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }} onClick={() => setIsPlaying(!isPlaying)}
-                  className="w-16 h-16 rounded-full bg-[#D40000] flex items-center justify-center shadow-xl shadow-[#D40000]/40 hover:bg-[#8B1111] transition-all"
+                  className="w-16 h-16 rounded-full bg-[#D40000] flex items-center justify-center shadow-xl shadow-[#D40000]/40 hover:bg-[#b50000] transition-all"
                   aria-label={isPlaying ? 'Pause' : 'Play'}>
                   {isPlaying ? <Pause className="w-7 h-7 fill-current text-white" /> : <Play className="w-7 h-7 fill-current text-white ml-0.5" />}
                 </motion.button>
@@ -318,7 +356,7 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
 
       <motion.div
         initial={{ y: 100 }} animate={{ y: 0 }} transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        className={`fixed bottom-0 left-0 right-0 z-40 glass-effect-strong border-t border-[rgba(255,255,255,0.06)] ${className}`}
+        className={`fixed bottom-0 left-0 right-0 z-40 player-glass border-t border-[rgba(255,255,255,0.06)] ${className}`}
         role="region" aria-label="Audio player"
       >
         <div className="relative h-[3px] bg-[rgba(255,255,255,0.06)]">
@@ -350,7 +388,7 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
                 <SkipBack className="w-4 h-4" />
               </motion.button>
               <motion.button whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }} onClick={() => setIsPlaying(!isPlaying)}
-                className="w-10 h-10 rounded-full bg-[#D40000] flex items-center justify-center hover:bg-[#8B1111] transition-all shadow-md shadow-[#D40000]/30"
+                className="w-10 h-10 rounded-full bg-[#D40000] flex items-center justify-center hover:bg-[#b50000] transition-all shadow-md shadow-[#D40000]/30"
                 aria-label={isPlaying ? 'Pause' : 'Play'}>
                 {isPlaying ? <Pause className="w-4 h-4 fill-current text-white" /> : <Play className="w-4 h-4 fill-current text-white ml-0.5" />}
               </motion.button>

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Heart, Plus, Check, ListMusic, Crown } from 'lucide-react';
 import Image from 'next/image';
@@ -25,7 +24,6 @@ const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false }
   const [addedTo, setAddedTo] = useState<string | null>(null);
   const [premiumBlocked, setPremiumBlocked] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
   const { currentTrack, isPlaying, playTrack, setIsPlaying } = usePlayerStore();
   const { localPlaylists, addSongToPlaylist } = useLibraryStore();
@@ -48,10 +46,7 @@ const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false }
   const handlePlay = () => {
     if (track.isPremium && !isPremium) {
       setPremiumBlocked(true);
-      setTimeout(() => {
-        setPremiumBlocked(false);
-        router.push('/subscribe');
-      }, 1800);
+      setTimeout(() => setPremiumBlocked(false), 2200);
       return;
     }
 
@@ -123,7 +118,7 @@ const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false }
           >
             <div className="flex items-center gap-2 px-4 py-2 bg-[#D40000] rounded-xl shadow-lg">
               <Crown className="w-3.5 h-3.5 text-white flex-shrink-0" />
-              <p className="text-xs text-white font-semibold">Premium only — redirecting to subscribe...</p>
+              <p className="text-xs text-white font-semibold">Premium subscribers only</p>
             </div>
           </motion.div>
         )}

@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
   const {
     title, artist = 'ESHANI', genre, duration, isPremium, releaseDate,
-    audioUrl, imageUrl, albumId, newAlbumTitle, newAlbumDescription,
+    audioUrl, imageUrl, albumImageUrl, albumId, newAlbumTitle, newAlbumDescription,
   } = await req.json();
 
   if (!title || !audioUrl || !imageUrl) {
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     finalAlbumId = `al-${Date.now()}`;
     await run(
       `INSERT INTO albums (id, title, image_url, release_date, description) VALUES (?, ?, ?, ?, ?)`,
-      [finalAlbumId, newAlbumTitle, imageUrl, releaseDate || null, newAlbumDescription || null]
+      [finalAlbumId, newAlbumTitle, albumImageUrl || imageUrl, releaseDate || null, newAlbumDescription || null]
     );
   }
 

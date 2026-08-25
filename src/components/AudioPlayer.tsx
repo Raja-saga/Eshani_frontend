@@ -60,6 +60,8 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [prevVolume, setPrevVolume] = useState(0.7);
+  // Actual duration read from the audio file — overrides the (often wrong) D1 value
+  const [actualDuration, setActualDuration] = useState(0);
 
   const ytPlayerRef = useRef<any>(null);
   const ytIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -161,6 +163,9 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
 
+    // Reset actual duration whenever track changes
+    setActualDuration(0);
+
     if (currentTrack.youtubeId) {
       // Switching to a YouTube track — silence the HTML5 element immediately
       audio.pause();
@@ -174,14 +179,25 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
     audio.src = currentTrack.audioUrl ?? '';
     audio.load();
 
-    // Play when ready — read live store value so a mid-load pause is honoured
+    // Use loadedmetadata (fires early) to get the real file duration
+    const onMeta = () => {
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        setActualDuration(audio.duration);
+      }
+    };
+    // canplay fires when enough data is buffered to start playing
     const tryPlay = () => {
+      // Re-read live store value — a pause could have arrived during buffering
       if (usePlayerStore.getState().isPlaying) {
         audio.play().catch(() => usePlayerStore.getState().setIsPlaying(false));
       }
     };
+    audio.addEventListener('loadedmetadata', onMeta, { once: true });
     audio.addEventListener('canplay', tryPlay, { once: true });
-    return () => audio.removeEventListener('canplay', tryPlay);
+    return () => {
+      audio.removeEventListener('loadedmetadata', onMeta);
+      audio.removeEventListener('canplay', tryPlay);
+    };
   }, [currentTrack?.id]); // eslint-disable-line
 
   // Play / pause — fires when isPlaying flag changes
@@ -198,12 +214,16 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
       // Ensure YouTube is always silent while HTML5 is active
       try { ytPlayerRef.current?.pauseVideo?.(); } catch {}
       const audio = audioRef.current;
-      if (!audio) return;
+      if (!audio || !audio.src) return;
       if (isPlaying) {
-        // Only call play if audio src is loaded enough; otherwise canplay listener handles it
-        if (audio.src && audio.readyState >= 2) {
-          audio.play().catch(() => setIsPlaying(false));
+        // If not ready yet, wait for canplay — it will call play() once buffered
+        if (audio.readyState >= 2) {
+          audio.play().catch((err) => {
+            // NotAllowedError = autoplay blocked; NotSupportedError = no src yet — both are transient
+            if (err.name !== 'AbortError') setIsPlaying(false);
+          });
         }
+        // If readyState < 2, the canplay listener registered in the src effect handles it
       } else {
         audio.pause();
       }
@@ -261,13 +281,25 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
   }, [setCurrentTime]);
 
   const handleEnded = useCallback(() => {
+    const audio = audioRef.current;
+    // Guard: some VBR MP3s have wrong duration headers — the browser fires "ended" too early.
+    // If we know the actual file duration (loadedmetadata) and currentTime is more than 2s
+    // before it, the song hasn't actually finished — seek forward instead of skipping.
+    if (audio && actualDuration > 0 && audio.currentTime < actualDuration - 2) {
+      audio.currentTime = actualDuration - 0.1;
+      return;
+    }
     if (repeat === 'one') {
-      if (audioRef.current) { audioRef.current.currentTime = 0; audioRef.current.play().catch(() => {}); }
+      if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
     } else { nextTrack(); }
-  }, [repeat, nextTrack]);
+  }, [repeat, nextTrack, actualDuration]);
 
-  const progressPercent = currentTrack?.duration
-    ? Math.min(100, (currentTime / currentTrack.duration) * 100) : 0;
+  // Use the actual file duration when available; fall back to what's stored in D1
+  const displayDuration = isYouTubeTrack
+    ? (currentTrack?.duration ?? 0)
+    : (actualDuration > 0 ? actualDuration : (currentTrack?.duration ?? 0));
+  const progressPercent = displayDuration > 0
+    ? Math.min(100, (currentTime / displayDuration) * 100) : 0;
 
   if (!currentTrack) return null;
 
@@ -323,10 +355,10 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
               </div>
 
               <div className="w-full max-w-sm space-y-1 group/slider">
-                <Slider value={currentTime} max={currentTrack.duration || 1} step={0.1} onChange={handleSeek} accent ariaLabel="Track progress" />
+                <Slider value={currentTime} max={displayDuration || 1} step={0.1} onChange={handleSeek} accent ariaLabel="Track progress" />
                 <div className="flex justify-between text-xs text-[#9CA3AF] px-0.5">
                   <span>{formatDuration(currentTime)}</span>
-                  <span>{formatDuration(currentTrack.duration)}</span>
+                  <span>{formatDuration(displayDuration)}</span>
                 </div>
               </div>
 
@@ -409,9 +441,9 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
             <div className="hidden lg:flex items-center gap-2 flex-1 max-w-sm min-w-0">
               <span className="text-[11px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-8 text-right">{formatDuration(currentTime)}</span>
               <div className="flex-1 group/slider">
-                <Slider seek value={currentTime} max={currentTrack.duration || 1} step={0.1} onChange={handleSeek} accent ariaLabel="Track progress" />
+                <Slider seek value={currentTime} max={displayDuration || 1} step={0.1} onChange={handleSeek} accent ariaLabel="Track progress" />
               </div>
-              <span className="text-[11px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-8">{formatDuration(currentTrack.duration)}</span>
+              <span className="text-[11px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-8">{formatDuration(displayDuration)}</span>
             </div>
 
             {/* Like + Volume — desktop only */}
@@ -437,9 +469,9 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
           <div className="lg:hidden flex items-center gap-2 mt-2 pb-1">
             <span className="text-[10px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-7 text-right">{formatDuration(currentTime)}</span>
             <div className="flex-1 group/slider">
-              <Slider seek value={currentTime} max={currentTrack.duration || 1} step={0.1} onChange={handleSeek} accent ariaLabel="Track progress" />
+              <Slider seek value={currentTime} max={displayDuration || 1} step={0.1} onChange={handleSeek} accent ariaLabel="Track progress" />
             </div>
-            <span className="text-[10px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-7">{formatDuration(currentTrack.duration)}</span>
+            <span className="text-[10px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-7">{formatDuration(displayDuration)}</span>
           </div>
         </div>
       </motion.div>

@@ -13,6 +13,8 @@ import {
   User,
   Settings,
   LogOut,
+  ListMusic,
+  Layers,
 } from 'lucide-react';
 
 const navItems = [
@@ -20,6 +22,8 @@ const navItems = [
   { label: 'Songs', href: '/admin/songs', icon: Music },
   { label: 'Upload', href: '/admin/upload', icon: Upload },
   { label: 'Albums', href: '/admin/albums', icon: Disc },
+  { label: 'Playlists', href: '/admin/playlists', icon: ListMusic },
+  { label: 'Collections', href: '/admin/collections', icon: Layers },
   { label: 'Releases', href: '/admin/releases', icon: Radio },
   { label: 'Analytics', href: '/admin/analytics', icon: BarChart2 },
   { label: 'Profile', href: '/admin/profile', icon: User },

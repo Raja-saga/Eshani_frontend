@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
-import { PremiumNavbar, AudioPlayer, BottomNavigation } from '@/components';
+import { PremiumNavbar, AudioPlayer } from '@/components';
+import PlaylistSync from '@/components/PlaylistSync';
+import SubscriptionSync from '@/components/SubscriptionSync';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -61,10 +63,11 @@ export default function RootLayout({
           {/* Persistent Audio Player */}
           <AudioPlayer />
 
-          {/* Mobile Bottom Navigation */}
-          <div className="lg:hidden">
-            <BottomNavigation />
-          </div>
+          {/* Syncs user playlists from DB into libraryStore */}
+          <PlaylistSync />
+          {/* Syncs subscription status from DB */}
+          <SubscriptionSync />
+
         </body>
       </html>
     </ClerkProvider>

@@ -3,10 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Moon, Sun, Menu, X } from 'lucide-react';
+import { Moon, Sun, Menu, X, Crown } from 'lucide-react';
 import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/nextjs';
 import SearchBar from './SearchBar';
 import { useToggle } from '@/hooks';
+import useSubscriptionStore from '@/store/subscriptionStore';
 
 interface NavbarProps {
   className?: string;
@@ -16,6 +17,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
   const [isMenuOpen, toggleMenu] = useToggle(false);
   const [isDark, toggleDark] = useToggle(false);
   const { isSignedIn } = useUser();
+  const { isPremium } = useSubscriptionStore();
 
   return (
     <motion.nav
@@ -60,8 +62,18 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
 
             {/* Auth Controls */}
             {isSignedIn ? (
-              // UserButton: avatar + dropdown with profile, manage account, sign out
-              <UserButton />
+              <div className="flex items-center gap-2">
+                {isPremium && (
+                  <div
+                    title="Premium Member"
+                    className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-yellow-500 to-amber-400 shadow-md shadow-yellow-500/30"
+                  >
+                    <Crown className="w-3.5 h-3.5 text-white fill-white" />
+                    <span className="text-[10px] font-bold text-white hidden sm:inline tracking-wide">PREMIUM</span>
+                  </div>
+                )}
+                <UserButton />
+              </div>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
                 <SignInButton mode="modal">

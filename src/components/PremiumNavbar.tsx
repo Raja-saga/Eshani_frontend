@@ -22,6 +22,7 @@ import { useUser, UserButton } from '@clerk/nextjs';
 import EshaniLogo from './EshaniLogo';
 import { ALL_SONGS } from '@/data/mockData';
 import usePlayerStore from '@/store/playerStore';
+import useSubscriptionStore from '@/store/subscriptionStore';
 import { Track as StoreTrack } from '@/types';
 
 const NAV_LINKS = [
@@ -37,6 +38,7 @@ interface PremiumNavbarProps {
 
 const PremiumNavbar: React.FC<PremiumNavbarProps> = ({ className = '' }) => {
   const { user, isLoaded, isSignedIn } = useUser();
+  const { isPremium } = useSubscriptionStore();
   const router = useRouter();
   const pathname = usePathname();
   const { playTrack, setQueue } = usePlayerStore();
@@ -320,14 +322,25 @@ const PremiumNavbar: React.FC<PremiumNavbarProps> = ({ className = '' }) => {
                 {isSignedIn ? (
                   <>
                     <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.95 }}>
-                      <Link
-                        href="/subscribe"
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D40000] text-white text-sm font-semibold hover:bg-[#8B1111] transition-all duration-200"
-                        aria-label="Subscribe"
-                      >
-                        <Crown className="w-4 h-4" />
-                        Subscribe
-                      </Link>
+                      {isPremium ? (
+                        <Link
+                          href="/profile"
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D40000]/10 border border-[#D40000]/30 text-[#D40000] text-sm font-bold hover:bg-[#D40000]/20 transition-all duration-200"
+                          aria-label="Premium member"
+                        >
+                          <Crown className="w-4 h-4" />
+                          Premium
+                        </Link>
+                      ) : (
+                        <Link
+                          href="/subscribe"
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D40000] text-white text-sm font-semibold hover:bg-[#8B1111] transition-all duration-200"
+                          aria-label="Subscribe"
+                        >
+                          <Crown className="w-4 h-4" />
+                          Subscribe
+                        </Link>
+                      )}
                     </motion.div>
                     <div className="ml-1">
                       <UserButton
@@ -577,14 +590,25 @@ const PremiumNavbar: React.FC<PremiumNavbarProps> = ({ className = '' }) => {
                         </p>
                       </div>
                     </div>
-                    <Link
-                      href="/subscribe"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-[#D40000] text-white text-sm font-semibold hover:bg-[#8B1111] transition-all"
-                    >
-                      <Crown className="w-4 h-4" />
-                      Subscribe
-                    </Link>
+                    {isPremium ? (
+                      <Link
+                        href="/profile"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-[#D40000]/10 border border-[#D40000]/30 text-[#D40000] text-sm font-bold hover:bg-[#D40000]/20 transition-all"
+                      >
+                        <Crown className="w-4 h-4" />
+                        Premium Member
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/subscribe"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-[#D40000] text-white text-sm font-semibold hover:bg-[#8B1111] transition-all"
+                      >
+                        <Crown className="w-4 h-4" />
+                        Subscribe
+                      </Link>
+                    )}
                   </>
                 ) : (
                   <>

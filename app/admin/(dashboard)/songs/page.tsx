@@ -55,6 +55,7 @@ function EditModal({ song, onClose, onSaved }: {
   const [coverFile, setCoverFile]     = useState<File | null>(null);
   const [audioFile, setAudioFile]     = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [coverUrlInput, setCoverUrlInput] = useState('');
 
   const [saving, setSaving]   = useState(false);
   const [progress, setProgress] = useState('');
@@ -94,28 +95,30 @@ function EditModal({ song, onClose, onSaved }: {
       let newImageUrl: string | undefined;
       let newAudioUrl: string | undefined;
 
-      if (coverFile || audioFile) {
-        setProgress('Getting upload URLs…');
-        const presignRes = await fetch('/api/admin/presign', {
+      // Cover: direct URL takes priority, else upload file through server
+      if (coverUrlInput.trim()) {
+        newImageUrl = coverUrlInput.trim();
+      } else if (coverFile) {
+        setProgress('Uploading cover image…');
+        const ext = coverFile.type === 'image/png' ? 'png' : coverFile.type === 'image/webp' ? 'webp' : 'jpg';
+        const r = await fetch('/api/admin/upload-file', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ audioSlug: slug, coverSlug: slug, coverType: coverFile?.type }),
+          headers: { 'x-file-key': `covers/${slug}.${ext}`, 'x-content-type': coverFile.type },
+          body: coverFile,
         });
-        if (!presignRes.ok) throw new Error((await presignRes.json()).error || 'Presign failed');
-        const { audioUploadUrl, coverUploadUrl, audioPublicUrl, coverPublicUrl } = await presignRes.json();
+        if (!r.ok) throw new Error((await r.json()).error || 'Cover upload failed');
+        ({ publicUrl: newImageUrl } = await r.json());
+      }
 
-        if (coverFile) {
-          setProgress('Uploading cover…');
-          const r = await fetch(coverUploadUrl, { method: 'PUT', headers: { 'Content-Type': coverFile.type }, body: coverFile });
-          if (!r.ok) throw new Error('Cover upload failed');
-          newImageUrl = coverPublicUrl;
-        }
-        if (audioFile) {
-          setProgress('Uploading audio…');
-          const r = await fetch(audioUploadUrl, { method: 'PUT', headers: { 'Content-Type': 'audio/mpeg' }, body: audioFile });
-          if (!r.ok) throw new Error('Audio upload failed');
-          newAudioUrl = audioPublicUrl;
-        }
+      if (audioFile) {
+        setProgress('Uploading audio…');
+        const r = await fetch('/api/admin/upload-file', {
+          method: 'POST',
+          headers: { 'x-file-key': `songs/${slug}.mp3`, 'x-content-type': 'audio/mpeg' },
+          body: audioFile,
+        });
+        if (!r.ok) throw new Error((await r.json()).error || 'Audio upload failed');
+        ({ publicUrl: newAudioUrl } = await r.json());
       }
 
       setProgress('Saving to database…');
@@ -185,7 +188,7 @@ function EditModal({ song, onClose, onSaved }: {
           {/* Cover */}
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-[#1a1a1a]">
-              <Image src={coverPreview ?? song.image_url} alt={song.title} fill className="object-cover" sizes="80px" />
+              <Image src={coverPreview ?? (coverUrlInput || song.image_url)} alt={song.title} fill className="object-cover" sizes="80px" unoptimized />
             </div>
             <input ref={coverRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleCover} className="hidden" />
             <button
@@ -194,7 +197,7 @@ function EditModal({ song, onClose, onSaved }: {
                 coverFile ? 'border-green-500/40 text-green-400' : 'border-white/[0.12] text-[#9CA3AF] hover:text-white'}`}
             >
               {coverFile ? <Check className="w-3 h-3" /> : <ImageIcon className="w-3 h-3" />}
-              {coverFile ? 'Ready' : 'Replace'}
+              {coverFile ? 'Ready' : 'Upload file'}
             </button>
           </div>
 
@@ -217,6 +220,17 @@ function EditModal({ song, onClose, onSaved }: {
             </button>
           </div>
         </div>
+
+        {/* Cover image URL (alternative to file upload) */}
+        <Field label="Or paste cover image URL">
+          <input
+            type="url"
+            value={coverUrlInput}
+            onChange={e => { setCoverUrlInput(e.target.value); if (coverFile) setCoverFile(null); }}
+            className={inputCls}
+            placeholder="https://pub-....r2.dev/covers/..."
+          />
+        </Field>
 
         {/* Metadata fields */}
         <div className="space-y-3">

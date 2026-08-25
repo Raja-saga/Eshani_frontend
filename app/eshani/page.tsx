@@ -26,11 +26,11 @@ import {
   TOP_PICKS,
   UPCOMING_RELEASES,
   ESHANI_PHOTOS,
-  ALBUMS,
 } from '@/data/mockData';
 import usePlayerStore from '@/store/playerStore';
 import useLibraryStore from '@/store/libraryStore';
 import { Track as StoreTrack } from '@/types';
+import { useLiveAlbums } from '@/hooks/useLiveAlbums';
 
 // â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -133,6 +133,7 @@ const PlayAllButton = ({ tracks }: { tracks: typeof TOP_PICKS }) => {
 export default function EshaniPage() {
   const { setQueue, playTrack } = usePlayerStore();
   const { isLiked, toggleLike } = useLibraryStore();
+  const { albums } = useLiveAlbums();
 
   const handlePlayDiscography = useCallback(() => {
     const queue = FEATURED_SONGS.map((t) => toStoreTrack(t, isLiked(t.id)));
@@ -445,7 +446,7 @@ export default function EshaniPage() {
             viewport={{ once: true, margin: '-80px' }}
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5"
           >
-            {ALBUMS.map((album, i) => (
+            {albums.map((album, i) => (
               <AlbumCard
                 key={album.id}
                 id={album.id}

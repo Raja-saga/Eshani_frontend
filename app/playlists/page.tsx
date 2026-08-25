@@ -6,20 +6,20 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { PlaylistCard, SectionHeader, Footer } from '@/components';
 import { FEATURED_PLAYLISTS } from '@/data/mockData';
-import useLibraryStore from '@/store/libraryStore';
+import { useUserPlaylists } from '@/hooks/useUserPlaylists';
 import { Plus, X, ListMusic, Trash2, ArrowRight } from 'lucide-react';
 
 export default function PlaylistsPage() {
-  const { localPlaylists, createPlaylist, deletePlaylist } = useLibraryStore();
+  const { playlists: localPlaylists, createPlaylist, deletePlaylist } = useUserPlaylists();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newName.trim()) {
-      createPlaylist(newName.trim(), newDesc.trim());
+      await createPlaylist(newName.trim(), newDesc.trim());
       setNewName('');
       setNewDesc('');
       setShowCreate(false);
@@ -164,7 +164,7 @@ export default function PlaylistsPage() {
                   >
                     <p className="flex-1 text-sm text-white">Delete &ldquo;{pl.name}&rdquo;?</p>
                     <button
-                      onClick={() => { deletePlaylist(pl.id); setDeleteConfirm(null); }}
+                      onClick={async () => { await deletePlaylist(pl.id); setDeleteConfirm(null); }}
                       className="px-3 py-1.5 rounded-lg bg-[#D40000] text-white text-xs font-semibold"
                     >
                       Delete

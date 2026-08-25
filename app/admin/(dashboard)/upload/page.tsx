@@ -35,9 +35,11 @@ export default function AdminUploadPage() {
   const [albumId, setAlbumId]         = useState('');
   const [newAlbumTitle, setNewAlbumTitle] = useState('');
   const [newAlbumDesc, setNewAlbumDesc]   = useState('');
-  const [audioFile, setAudioFile]     = useState<File | null>(null);
-  const [coverFile, setCoverFile]     = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [audioFile, setAudioFile]         = useState<File | null>(null);
+  const [coverFile, setCoverFile]         = useState<File | null>(null);
+  const [coverPreview, setCoverPreview]   = useState<string | null>(null);
+  const [albumCoverFile, setAlbumCoverFile]       = useState<File | null>(null);
+  const [albumCoverPreview, setAlbumCoverPreview] = useState<string | null>(null);
   const [uploading, setUploading]     = useState(false);
   const [progress, setProgress]       = useState('');
   const [error, setError]             = useState<string | null>(null);
@@ -49,8 +51,9 @@ export default function AdminUploadPage() {
   const [uploadedSongs, setUploadedSongs]       = useState<UploadedSong[]>([]);
   const [addingAnother, setAddingAnother]       = useState(false);
 
-  const audioRef = useRef<HTMLInputElement>(null);
-  const coverRef = useRef<HTMLInputElement>(null);
+  const audioRef      = useRef<HTMLInputElement>(null);
+  const coverRef      = useRef<HTMLInputElement>(null);
+  const albumCoverRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch('/api/albums')
@@ -77,6 +80,14 @@ export default function AdminUploadPage() {
     setCoverPreview(URL.createObjectURL(file));
   };
 
+  const handleAlbumCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAlbumCoverFile(file);
+    if (albumCoverPreview) URL.revokeObjectURL(albumCoverPreview);
+    setAlbumCoverPreview(URL.createObjectURL(file));
+  };
+
   const resetSongFields = () => {
     setTitle(''); setGenre(''); setDuration(0);
     setIsPremium(false); setReleaseDate('');
@@ -92,6 +103,10 @@ export default function AdminUploadPage() {
     setNewAlbumTitle(''); setNewAlbumDesc('');
     setCreatedAlbumId(null); setCreatedAlbumTitle(null);
     setUploadedSongs([]); setAddingAnother(false);
+    setAlbumCoverFile(null);
+    if (albumCoverPreview) URL.revokeObjectURL(albumCoverPreview);
+    setAlbumCoverPreview(null);
+    if (albumCoverRef.current) albumCoverRef.current.value = '';
     resetSongFields();
   };
 
@@ -109,11 +124,12 @@ export default function AdminUploadPage() {
     setError(null);
     setSuccess(false);
 
-    if (!title.trim())                                 return setError('Song title is required');
-    if (!audioFile)                                    return setError('Please select an MP3 file');
-    if (!coverFile)                                    return setError('Please select a cover image');
-    if (mode === 'add-to-album' && !albumId)           return setError('Please select an album');
-    if (mode === 'new-album' && !newAlbumTitle.trim()) return setError('Album title is required');
+    if (!title.trim())                                        return setError('Song title is required');
+    if (!audioFile)                                           return setError('Please select an MP3 file');
+    if (!coverFile)                                           return setError('Please select a song cover image');
+    if (mode === 'add-to-album' && !albumId)                  return setError('Please select an album');
+    if (mode === 'new-album' && !newAlbumTitle.trim())        return setError('Album title is required');
+    if (mode === 'new-album' && !addingAnother && !albumCoverFile) return setError('Please select an album cover image');
 
     setUploading(true);
     try {
@@ -134,7 +150,7 @@ export default function AdminUploadPage() {
       setProgress('Uploading cover image…');
       const cr = await fetch('/api/admin/upload-file', {
         method: 'POST',
-        headers: { 'x-file-key': `covers/${slug}.jpg`, 'x-content-type': coverFile.type },
+        headers: { 'x-file-key': `covers/songs/${slug}.jpg`, 'x-content-type': coverFile.type },
         body: coverFile,
       });
       if (!cr.ok) {
@@ -142,6 +158,24 @@ export default function AdminUploadPage() {
         throw new Error(e || 'Cover upload failed');
       }
       const { publicUrl: coverPublicUrl } = await cr.json();
+
+      // Upload album cover only when creating a new album (not when adding another song)
+      let albumCoverPublicUrl: string | null = null;
+      if (mode === 'new-album' && !addingAnother && albumCoverFile) {
+        setProgress('Uploading album cover…');
+        const albumSlug = toSlug(newAlbumTitle.trim());
+        const acr = await fetch('/api/admin/upload-file', {
+          method: 'POST',
+          headers: { 'x-file-key': `covers/albums/${albumSlug}.jpg`, 'x-content-type': albumCoverFile.type },
+          body: albumCoverFile,
+        });
+        if (!acr.ok) {
+          const { error: e } = await acr.json().catch(() => ({}));
+          throw new Error(e || 'Album cover upload failed');
+        }
+        const { publicUrl } = await acr.json();
+        albumCoverPublicUrl = publicUrl;
+      }
 
       setProgress('Saving to database…');
       const saveRes = await fetch('/api/admin/songs', {
@@ -156,6 +190,7 @@ export default function AdminUploadPage() {
           releaseDate: releaseDate || null,
           audioUrl: audioPublicUrl,
           imageUrl: coverPublicUrl,
+          albumImageUrl: albumCoverPublicUrl,
           albumId:  mode === 'add-to-album' ? albumId : null,
           newAlbumTitle:       mode === 'new-album' ? newAlbumTitle.trim() : null,
           newAlbumDescription: mode === 'new-album' ? newAlbumDesc.trim()  : null,
@@ -320,6 +355,33 @@ export default function AdminUploadPage() {
               <label className="text-xs text-[#9CA3AF] font-medium mb-1.5 block">Description</label>
               <textarea value={newAlbumDesc} onChange={e => setNewAlbumDesc(e.target.value)} placeholder="What's this album about?" rows={2}
                 className={input + ' resize-none'} />
+            </div>
+            {/* Album Cover */}
+            <div>
+              <label className="text-xs text-[#9CA3AF] font-medium mb-2 block">Album Cover Image *</label>
+              <input ref={albumCoverRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAlbumCoverChange} className="hidden" />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button" onClick={() => albumCoverRef.current?.click()}
+                  className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed text-sm transition-colors ${
+                    albumCoverFile
+                      ? 'border-green-500/30 bg-green-500/5 text-green-400'
+                      : 'border-white/[0.1] text-[#9CA3AF] hover:border-white/20 hover:text-white'
+                  }`}
+                >
+                  {albumCoverFile ? (
+                    <><Check className="w-4 h-4 flex-shrink-0" /><span className="truncate">{albumCoverFile.name}</span></>
+                  ) : (
+                    <><ImageIcon className="w-4 h-4 flex-shrink-0" /><span>Click to select album cover</span></>
+                  )}
+                </button>
+                {albumCoverPreview && (
+                  <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-white/10">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={albumCoverPreview} alt="Album cover preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

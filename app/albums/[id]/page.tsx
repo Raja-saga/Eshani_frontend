@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useCallback } from 'react';
-import { useParams, notFound } from 'next/navigation';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -11,23 +11,108 @@ import { formatDuration } from '@/utils/helpers';
 import useLibraryStore from '@/store/libraryStore';
 import usePlayerStore from '@/store/playerStore';
 import { Track as StoreTrack } from '@/types';
-import { ChevronLeft, Play, Pause, Bookmark, BookmarkCheck, Calendar, Music2 } from 'lucide-react';
+import { ChevronLeft, Play, Pause, Bookmark, BookmarkCheck, Calendar, Music2, Loader2 } from 'lucide-react';
+
+interface ApiSong {
+  id: string;
+  title: string;
+  artist: string;
+  album: string | null;
+  audio_url: string;
+  image_url: string;
+  duration: number;
+  plays: number;
+  genre: string | null;
+  is_premium: number;
+}
+
+interface AlbumData {
+  id: string;
+  title: string;
+  image_url: string;
+  release_date: string | null;
+  description: string | null;
+  track_count: number;
+  total_duration: number;
+}
+
+function mapApiSongToTrack(s: ApiSong) {
+  return {
+    id: s.id,
+    title: s.title,
+    artist: s.artist,
+    album: s.album ?? '',
+    duration: s.duration,
+    image: s.image_url || '',
+    coverUrl: s.image_url || '',
+    audioUrl: s.audio_url ?? '',
+    genre: s.genre ?? '',
+    plays: s.plays ?? 0,
+    isPremium: Boolean(s.is_premium),
+  };
+}
 
 export default function AlbumDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const album = ALBUMS.find((a) => a.id === id);
 
-  if (!album) {
-    notFound();
-  }
+  const [albumData, setAlbumData] = useState<{ title: string; image: string; releaseDate: string; description?: string; duration: number } | null>(null);
+  const [albumSongs, setAlbumSongs] = useState<ReturnType<typeof mapApiSongToTrack>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notFoundState, setNotFoundState] = useState(false);
 
-  const albumSongs = ALL_SONGS.filter((s) => album.songIds.includes(s.id));
   const { toggleLike, isLiked, toggleSaveAlbum, isAlbumSaved } = useLibraryStore();
   const { setQueue, playTrack, currentTrack, isPlaying, setIsPlaying } = usePlayerStore();
 
+  useEffect(() => {
+    // Try mockData first
+    const mockAlbum = ALBUMS.find((a) => a.id === id);
+    if (mockAlbum) {
+      const mockSongs = ALL_SONGS.filter((s) => mockAlbum.songIds.includes(s.id));
+      setAlbumData({
+        title: mockAlbum.title,
+        image: mockAlbum.image,
+        releaseDate: mockAlbum.releaseDate,
+        description: mockAlbum.description,
+        duration: mockAlbum.duration,
+      });
+      setAlbumSongs(mockSongs.map((s) => ({
+        id: s.id,
+        title: s.title,
+        artist: s.artist,
+        album: mockAlbum.title,
+        duration: s.duration,
+        image: s.image,
+        coverUrl: s.image,
+        audioUrl: s.audioUrl ?? '',
+        genre: s.genre ?? '',
+        plays: s.plays ?? 0,
+        isPremium: s.isPremium ?? false,
+      })));
+      setLoading(false);
+      return;
+    }
+
+    // Fallback to API for DB albums
+    fetch(`/api/albums/${id}`)
+      .then(async (r) => {
+        if (r.status === 404) { setNotFoundState(true); return; }
+        const { album, songs } = await r.json() as { album: AlbumData; songs: ApiSong[] };
+        setAlbumData({
+          title: album.title,
+          image: album.image_url || '',
+          releaseDate: album.release_date ?? new Date().toISOString(),
+          description: album.description ?? undefined,
+          duration: Number(album.total_duration ?? 0),
+        });
+        setAlbumSongs((songs ?? []).map(mapApiSongToTrack));
+      })
+      .catch(() => setNotFoundState(true))
+      .finally(() => setLoading(false));
+  }, [id]);
+
   const isAlbumActive = albumSongs.some((s) => s.id === currentTrack?.id);
   const isAlbumPlaying = isAlbumActive && isPlaying;
-  const saved = isAlbumSaved(album.id);
+  const saved = isAlbumSaved(id);
 
   const handlePlayAll = useCallback(() => {
     if (isAlbumPlaying) { setIsPlaying(false); return; }
@@ -36,17 +121,35 @@ export default function AlbumDetailPage() {
       id: t.id,
       title: t.title,
       artist: t.artist,
-      album: album.title,
+      album: albumData?.title ?? '',
       duration: t.duration,
-      image: t.image, coverUrl: t.image,
-      audioUrl: t.audioUrl ?? '',
-      genre: t.genre ?? '',
-      plays: t.plays ?? 0,
+      image: t.image,
+      coverUrl: t.image,
+      audioUrl: t.audioUrl,
+      genre: t.genre,
+      plays: t.plays,
       liked: isLiked(t.id),
     }));
     setQueue(queue);
     if (queue[0]) playTrack(queue[0]);
-  }, [isAlbumActive, isAlbumPlaying, albumSongs, album.title, isLiked, setQueue, playTrack, setIsPlaying]);
+  }, [isAlbumActive, isAlbumPlaying, albumSongs, albumData, isLiked, setQueue, playTrack, setIsPlaying]);
+
+  if (loading) {
+    return (
+      <div className="bg-[#000000] text-white min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#D40000]" />
+      </div>
+    );
+  }
+
+  if (notFoundState || !albumData) {
+    return (
+      <div className="bg-[#000000] text-white min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-2xl font-bold">Album not found</p>
+        <Link href="/albums" className="text-[#D40000] hover:underline text-sm">Browse all albums</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#000000] text-[#FFFFFF] min-h-screen">
@@ -73,14 +176,17 @@ export default function AlbumDetailPage() {
         >
           {/* Cover */}
           <div className="relative w-48 h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl shadow-black/60">
-            <Image
-              src={album.image}
-              alt={album.title}
-              fill
-              className="object-cover"
-              sizes="256px"
-              priority
-            />
+            {albumData.image && (
+              <Image
+                src={albumData.image}
+                alt={albumData.title}
+                fill
+                className="object-cover"
+                sizes="256px"
+                priority
+                unoptimized
+              />
+            )}
           </div>
 
           {/* Info */}
@@ -91,25 +197,25 @@ export default function AlbumDetailPage() {
                 className="text-3xl lg:text-5xl font-black text-white leading-tight"
                 style={{ fontFamily: 'var(--font-poppins, sans-serif)' }}
               >
-                {album.title}
+                {albumData.title}
               </h1>
               <p className="text-[#9CA3AF] mt-1 font-medium">ESHANI</p>
             </div>
 
-            {album.description && (
-              <p className="text-sm text-[#9CA3AF] leading-relaxed max-w-lg">{album.description}</p>
+            {albumData.description && (
+              <p className="text-sm text-[#9CA3AF] leading-relaxed max-w-lg">{albumData.description}</p>
             )}
 
             <div className="flex items-center gap-4 text-sm text-[#9CA3AF]">
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />
-                {new Date(album.releaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                {new Date(albumData.releaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
               </span>
               <span className="flex items-center gap-1.5">
                 <Music2 className="w-3.5 h-3.5" />
                 {albumSongs.length} tracks
               </span>
-              <span>{formatDuration(album.duration)}</span>
+              {albumData.duration > 0 && <span>{formatDuration(albumData.duration)}</span>}
             </div>
 
             {/* Actions */}
@@ -132,7 +238,7 @@ export default function AlbumDetailPage() {
               <motion.button
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => toggleSaveAlbum(album.id)}
+                onClick={() => toggleSaveAlbum(id)}
                 className={`p-3 rounded-xl border transition-all ${
                   saved
                     ? 'border-[#D40000] text-[#D40000] bg-[rgba(212,0,0,0.1)]'

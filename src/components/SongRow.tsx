@@ -16,16 +16,17 @@ interface SongRowProps {
   index: number;
   onLike?: () => void;
   liked?: boolean;
+  queue?: StoreTrack[]; // full ordered queue — when provided, sets queue before playing
 }
 
-const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false }) => {
+const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false, queue }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
   const [addedTo, setAddedTo] = useState<string | null>(null);
   const [premiumBlocked, setPremiumBlocked] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { currentTrack, isPlaying, playTrack, setIsPlaying } = usePlayerStore();
+  const { currentTrack, isPlaying, playTrack, setIsPlaying, setQueue } = usePlayerStore();
   const { localPlaylists, addSongToPlaylist } = useLibraryStore();
   const { isPremium } = useSubscriptionStore();
 
@@ -68,7 +69,13 @@ const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false }
         youtubeId: track.youtubeId,
         isPremium: track.isPremium,
       };
-      playTrack(storeTrack);
+      if (queue && queue.length > 0) {
+        setQueue(queue);
+        const inQueue = queue.find(q => q.id === track.id);
+        playTrack(inQueue ?? storeTrack);
+      } else {
+        playTrack(storeTrack);
+      }
     }
   };
 
@@ -84,12 +91,6 @@ const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false }
     setTimeout(() => { setAddedTo(null); setShowPlaylistMenu(false); }, 900);
   };
 
-  const formatPlays = (plays?: number) => {
-    if (!plays) return '';
-    if (plays >= 1_000_000) return (plays / 1_000_000).toFixed(1) + 'M';
-    if (plays >= 1_000) return (plays / 1_000).toFixed(0) + 'K';
-    return plays.toString();
-  };
 
   return (
     <motion.div
@@ -173,13 +174,6 @@ const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false }
           <span className="text-xs text-[#9CA3AF] px-2.5 py-1 rounded-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.08)]">
             {track.genre}
           </span>
-        </div>
-      )}
-
-      {/* Plays */}
-      {track.plays && (
-        <div className="hidden lg:block flex-shrink-0 w-16 text-right">
-          <span className="text-xs text-[#9CA3AF] tabular-nums">{formatPlays(track.plays)}</span>
         </div>
       )}
 

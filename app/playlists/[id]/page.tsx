@@ -9,19 +9,15 @@ import { SongRow, Footer } from '@/components';
 import { FEATURED_PLAYLISTS } from '@/data/mockData';
 import { useLiveCatalog } from '@/hooks/useLiveCatalog';
 import useLibraryStore from '@/store/libraryStore';
+import { useUserPlaylists } from '@/hooks/useUserPlaylists';
 import usePlayerStore from '@/store/playerStore';
 import { Track as StoreTrack } from '@/types';
 import { ChevronLeft, Play, Pause, ListMusic, Music2, Pencil, Check, X, Plus } from 'lucide-react';
 
 export default function PlaylistDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const {
-    localPlaylists,
-    toggleLike,
-    isLiked,
-    renamePlaylist,
-    removeSongFromPlaylist,
-  } = useLibraryStore();
+  const { toggleLike, isLiked, localPlaylists } = useLibraryStore();
+  const { renamePlaylist, removeSongFromPlaylist } = useUserPlaylists();
   const { setQueue, playTrack, currentTrack, isPlaying, setIsPlaying } = usePlayerStore();
 
   const [editingName, setEditingName] = useState(false);
@@ -79,9 +75,9 @@ export default function PlaylistDetailPage() {
     if (queue[0]) playTrack(queue[0]);
   }, [isPlaylistActive, isPlaylistPlaying, playlistSongs, isLiked, setQueue, playTrack, setIsPlaying]);
 
-  const handleRename = () => {
+  const handleRename = async () => {
     if (editValue.trim() && localPlaylist) {
-      renamePlaylist(localPlaylist.id, editValue.trim());
+      await renamePlaylist(localPlaylist.id, editValue.trim());
     }
     setEditingName(false);
   };
@@ -234,13 +230,21 @@ export default function PlaylistDetailPage() {
           </div>
         ) : (
           <div>
-            {playlistSongs.map((t, i) => (
+            {playlistSongs.map((t, i) => {
+              const queue: StoreTrack[] = playlistSongs.map((s) => ({
+                id: s.id, title: s.title, artist: s.artist, album: s.album ?? '',
+                duration: s.duration, image: s.image, coverUrl: s.image,
+                audioUrl: s.audioUrl ?? '', genre: s.genre ?? '', plays: s.plays ?? 0,
+                liked: isLiked(s.id), youtubeId: s.youtubeId, isPremium: s.isPremium,
+              }));
+              return (
               <div key={t.id} className="group relative">
                 <SongRow
                   track={t}
                   index={i}
                   liked={isLiked(t.id)}
                   onLike={() => toggleLike(t.id)}
+                  queue={queue}
                 />
                 {isLocal && (
                   <button
@@ -252,7 +256,8 @@ export default function PlaylistDetailPage() {
                   </button>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

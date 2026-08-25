@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SongRow, Footer } from '@/components';
-import { COLLECTIONS, FEATURED_PLAYLISTS } from '@/data/mockData';
+import { FEATURED_PLAYLISTS } from '@/data/mockData';
 import useLibraryStore from '@/store/libraryStore';
-import { Heart, Clock, ListMusic, Disc3, Layers, Play, ArrowRight } from 'lucide-react';
+import { useLiveCollections } from '@/hooks/useLiveCollections';
+import { Heart, Clock, ListMusic, Disc3, Layers, Play, ArrowRight, HeartOff } from 'lucide-react';
 import usePlayerStore from '@/store/playerStore';
 import { Track as StoreTrack } from '@/types';
 import { formatDuration } from '@/utils/helpers';
@@ -43,12 +44,14 @@ export default function LibraryPage() {
     recentlyPlayedIds,
     toggleLike,
     isLiked,
+    toggleSaveAlbum,
   } = useLibraryStore();
   const { setQueue, playTrack } = usePlayerStore();
 
   // Live catalogs — DB songs + mockData fallback
   const { songs: allSongs } = useLiveCatalog();
   const { albums: allAlbums } = useLiveAlbums();
+  const { collections } = useLiveCollections();
 
   const likedSongs = useMemo(
     () => allSongs.filter((t) => likedSongIds.includes(t.id)),
@@ -208,9 +211,10 @@ export default function LibraryPage() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
                 {FEATURED_PLAYLISTS.map((pl) => (
-                  <div
+                  <Link
                     key={pl.id}
-                    className="flex items-center gap-4 p-4 rounded-2xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.07)] transition-all cursor-pointer group"
+                    href={`/playlists/${pl.id}`}
+                    className="flex items-center gap-4 p-4 rounded-2xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.07)] transition-all group"
                   >
                     <div className="relative w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden">
                       <Image src={pl.image} alt={pl.title} fill className="object-cover" sizes="56px" />
@@ -219,8 +223,8 @@ export default function LibraryPage() {
                       <p className="text-sm font-semibold text-white truncate">{pl.title}</p>
                       <p className="text-xs text-[#9CA3AF] mt-0.5">{pl.trackCount} tracks</p>
                     </div>
-                    <Play className="w-4 h-4 text-[#9CA3AF] group-hover:text-[#D40000] transition-colors ml-auto flex-shrink-0" />
-                  </div>
+                    <ArrowRight className="w-4 h-4 text-[#9CA3AF] group-hover:text-[#D40000] transition-colors ml-auto flex-shrink-0" />
+                  </Link>
                 ))}
               </div>
 
@@ -285,30 +289,39 @@ export default function LibraryPage() {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
                   {savedAlbums.map((album) => (
-                    <Link key={album.id} href={`/albums/${album.id}`} className="group">
-                      <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 bg-[#111111]">
-                        {album.image ? (
-                          <Image
-                            src={album.image}
-                            alt={album.title}
-                            fill
-                            unoptimized
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            sizes="(max-width: 640px) 50vw, 25vw"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Disc3 className="w-12 h-12 text-[#333]" />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-sm font-bold text-white truncate group-hover:text-[#D40000] transition-colors">
-                        {album.title}
-                      </p>
-                      <p className="text-xs text-[#9CA3AF] mt-0.5">
-                        {album.trackCount} tracks · {formatDuration(album.duration)}
-                      </p>
-                    </Link>
+                    <div key={album.id} className="group relative">
+                      <Link href={`/albums/${album.id}`}>
+                        <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 bg-[#111111]">
+                          {album.image ? (
+                            <Image
+                              src={album.image}
+                              alt={album.title}
+                              fill
+                              unoptimized
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              sizes="(max-width: 640px) 50vw, 25vw"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Disc3 className="w-12 h-12 text-[#333]" />
+                            </div>
+                          )}
+                          <button
+                            onClick={(e) => { e.preventDefault(); toggleSaveAlbum(album.id); }}
+                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#D40000]/80"
+                            aria-label="Remove from saved"
+                          >
+                            <HeartOff className="w-4 h-4 text-white" />
+                          </button>
+                        </div>
+                        <p className="text-sm font-bold text-white truncate group-hover:text-[#D40000] transition-colors">
+                          {album.title}
+                        </p>
+                        <p className="text-xs text-[#9CA3AF] mt-0.5">
+                          {album.trackCount} tracks · {formatDuration(album.duration)}
+                        </p>
+                      </Link>
+                    </div>
                   ))}
                 </div>
               )}
@@ -319,43 +332,39 @@ export default function LibraryPage() {
           {activeTab === 'collections' && (
             <motion.div key="collections" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {COLLECTIONS.map((col) => {
-                  const colSongs = allSongs.filter((s) => col.songIds.includes(s.id));
-                  return (
-                    <motion.div
-                      key={col.id}
-                      whileHover={{ y: -2 }}
-                      className="group rounded-2xl overflow-hidden bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.07)] cursor-pointer"
-                      onClick={() => colSongs.length > 0 && handlePlaySongs(colSongs)}
-                    >
-                      <div className="relative h-36 overflow-hidden">
+                {collections.map((col) => (
+                  <Link key={col.id} href={`/collections/${col.id}`} className="group block rounded-2xl overflow-hidden bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.07)] hover:border-[rgba(255,255,255,0.15)] transition-all">
+                    <div className="relative h-36 overflow-hidden">
+                      {col.image_url ? (
                         <Image
-                          src={col.image}
+                          src={col.image_url}
                           alt={col.name}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          unoptimized
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                        <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
-                          <h3
-                            className="text-base font-bold text-white"
-                            style={{ fontFamily: 'var(--font-poppins, sans-serif)' }}
-                          >
-                            {col.name}
-                          </h3>
-                          <div className="w-9 h-9 rounded-full bg-[#D40000] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg">
-                            <Play className="w-4 h-4 text-white fill-current" />
-                          </div>
+                      ) : (
+                        <div className="absolute inset-0 bg-[#111] flex items-center justify-center">
+                          <Layers className="w-12 h-12 text-[#333]" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+                        <h3 className="text-base font-bold text-white" style={{ fontFamily: 'var(--font-poppins, sans-serif)' }}>
+                          {col.name}
+                        </h3>
+                        <div className="w-9 h-9 rounded-full bg-[#D40000] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg">
+                          <Play className="w-4 h-4 text-white fill-current" />
                         </div>
                       </div>
-                      <div className="p-4">
-                        <p className="text-xs text-[#9CA3AF]">{col.description}</p>
-                        <p className="text-xs text-[#9CA3AF] mt-1">{colSongs.length} tracks</p>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                    </div>
+                    <div className="p-4">
+                      <p className="text-xs text-[#9CA3AF]">{col.description}</p>
+                      <p className="text-xs text-[#9CA3AF] mt-1">{col.song_count} tracks</p>
+                    </div>
+                  </Link>
+                ))}
               </div>
             </motion.div>
           )}

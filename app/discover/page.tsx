@@ -16,13 +16,13 @@ import {
 import {
   UPCOMING_RELEASES,
   FEATURED_PLAYLISTS,
-  ALBUMS,
   TOP_PICKS,
 } from '@/data/mockData';
 import usePlayerStore from '@/store/playerStore';
 import useLibraryStore from '@/store/libraryStore';
 import { Track as StoreTrack } from '@/types';
 import { useLiveCatalog } from '@/hooks/useLiveCatalog';
+import { useLiveAlbums } from '@/hooks/useLiveAlbums';
 import { Search, Play, Music2, Disc3, ListMusic, Clock } from 'lucide-react';
 
 const fadeUp = {
@@ -64,6 +64,7 @@ function DiscoverContent() {
   const { toggleLike, isLiked } = useLibraryStore();
   const { setQueue, playTrack } = usePlayerStore();
   const { songs: allSongs, popularSongs, recentSongs, newUploads } = useLiveCatalog();
+  const { albums: liveAlbums } = useLiveAlbums();
 
   // Top Picks: new uploads first, then curated mockData TOP_PICKS
   const topPickIds = new Set(TOP_PICKS.map((s) => s.id));
@@ -245,7 +246,7 @@ function DiscoverContent() {
           seeAllHref="/albums"
         />
         <motion.div variants={gridVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
-          {ALBUMS.map((a, i) => (
+          {liveAlbums.map((a, i) => (
             <AlbumCard
               key={a.id}
               id={a.id}

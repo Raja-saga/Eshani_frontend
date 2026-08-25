@@ -21,6 +21,8 @@ interface LibraryStore {
   isAlbumSaved: (id: string) => boolean;
   toggleNotify: (id: string) => void;
   isNotified: (id: string) => boolean;
+  /** Overwrite the in-memory playlist list (called by useUserPlaylists after DB fetch) */
+  setPlaylists: (playlists: LocalPlaylist[]) => void;
   createPlaylist: (name: string, description?: string) => void;
   deletePlaylist: (id: string) => void;
   renamePlaylist: (id: string, name: string) => void;
@@ -65,6 +67,8 @@ const useLibraryStore = create<LibraryStore>()(
 
       isNotified: (id) => get().notifiedReleaseIds.includes(id),
 
+      setPlaylists: (playlists) => set({ localPlaylists: playlists }),
+
       createPlaylist: (name, description = '') =>
         set((state) => ({
           localPlaylists: [
@@ -91,23 +95,37 @@ const useLibraryStore = create<LibraryStore>()(
           ),
         })),
 
-      addSongToPlaylist: (playlistId, songId) =>
+      addSongToPlaylist: (playlistId, songId) => {
+        // Optimistic update
         set((state) => ({
           localPlaylists: state.localPlaylists.map((p) =>
             p.id === playlistId && !p.songIds.includes(songId)
               ? { ...p, songIds: [...p.songIds, songId] }
               : p
           ),
-        })),
+        }));
+        // Persist to DB (fire-and-forget from store; errors are silent here)
+        fetch(`/api/user/playlists/${playlistId}/songs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ songId }),
+        }).catch(() => {});
+      },
 
-      removeSongFromPlaylist: (playlistId, songId) =>
+      removeSongFromPlaylist: (playlistId, songId) => {
         set((state) => ({
           localPlaylists: state.localPlaylists.map((p) =>
             p.id === playlistId
               ? { ...p, songIds: p.songIds.filter((s) => s !== songId) }
               : p
           ),
-        })),
+        }));
+        fetch(`/api/user/playlists/${playlistId}/songs`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ songId }),
+        }).catch(() => {});
+      },
 
       addToRecentlyPlayed: (id) =>
         set((state) => {
@@ -115,7 +133,16 @@ const useLibraryStore = create<LibraryStore>()(
           return { recentlyPlayedIds: [id, ...filtered].slice(0, 30) };
         }),
     }),
-    { name: 'eshani-library' }
+    {
+      name: 'eshani-library',
+      // localPlaylists are loaded from DB per-user — never persist them in localStorage
+      partialize: (state) => ({
+        likedSongIds: state.likedSongIds,
+        savedAlbumIds: state.savedAlbumIds,
+        notifiedReleaseIds: state.notifiedReleaseIds,
+        recentlyPlayedIds: state.recentlyPlayedIds,
+      }),
+    }
   )
 );
 

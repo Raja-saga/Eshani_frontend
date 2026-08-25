@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SignOutButton } from '@clerk/nextjs';
+import EshaniLogo from '@/components/EshaniLogo';
 import {
   LayoutDashboard,
   Music,
@@ -39,16 +40,12 @@ export default function AdminNav() {
   return (
     <nav className="flex flex-col h-full">
       {/* Logo */}
-      <div className="px-6 py-6 border-b border-white/[0.06] flex-shrink-0">
-        <Link
-          href="/admin"
-          className="text-2xl font-black tracking-tight text-white"
-          style={{ fontFamily: 'var(--font-poppins, sans-serif)' }}
-        >
-          ESH<span className="text-[#D40000]">ANI</span>
+      <div className="px-6 py-5 border-b border-white/[0.06] flex-shrink-0">
+        <Link href="/admin" aria-label="ESHANI Admin" className="block">
+          <EshaniLogo width={100} height={28} className="text-white" />
         </Link>
-        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#D40000] mt-0.5">
-          Admin
+        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#D40000] mt-1.5">
+          Admin Panel
         </p>
       </div>
 

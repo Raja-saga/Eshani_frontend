@@ -402,26 +402,92 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
         className={`fixed bottom-0 left-0 right-0 z-40 player-glass border-t border-[rgba(255,255,255,0.06)] ${className}`}
         role="region" aria-label="Audio player"
       >
-        <div className="container-premium pt-3 pb-2 lg:pt-3 lg:pb-3">
-          {/* Main row: track info | waveform | controls | seek (desktop) | volume+like (desktop) */}
-          <div className="flex items-center gap-3 lg:gap-4">
-            {/* Track info */}
-            <div onClick={() => setIsExpanded(true)} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer group/info"
-              role="button" tabIndex={0} aria-label="Expand player" onKeyDown={(e) => e.key === 'Enter' && setIsExpanded(true)}>
-              <motion.div layoutId="player-album-art" className="relative w-11 h-11 flex-shrink-0 rounded-xl overflow-hidden">
-                <Image src={currentTrack.image ?? currentTrack.coverUrl ?? ''} alt={`${currentTrack.title} cover`} fill className="object-cover" sizes="44px" />
-              </motion.div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[#FFFFFF] truncate group-hover/info:text-[#D40000] transition-colors">{currentTrack.title}</p>
-                <p className="text-xs text-[#9CA3AF] truncate">{currentTrack.artist}</p>
-              </div>
-              <ChevronUp className="w-4 h-4 text-[#9CA3AF] flex-shrink-0 hidden sm:block group-hover/info:text-white transition-colors" />
+        {/* Seek bar — full width, sits above content on all screens */}
+        <div className="px-3 pt-2 group/slider">
+          <Slider seek value={currentTime} max={displayDuration || 1} step={0.1} onChange={handleSeek} accent ariaLabel="Track progress" />
+          <div className="flex justify-between text-[9px] text-[#9CA3AF] tabular-nums mt-0.5 px-0.5">
+            <span>{formatDuration(currentTime)}</span>
+            <span>{formatDuration(displayDuration)}</span>
+          </div>
+        </div>
+
+        <div className="px-3 pb-3 pt-1">
+          {/* ── MOBILE layout (< lg) ── */}
+          <div className="flex lg:hidden items-center gap-2">
+            {/* Album art — taps to expand */}
+            <div
+              onClick={() => setIsExpanded(true)}
+              className="relative w-10 h-10 flex-shrink-0 rounded-xl overflow-hidden cursor-pointer"
+              role="button" tabIndex={0} aria-label="Expand player"
+              onKeyDown={(e) => e.key === 'Enter' && setIsExpanded(true)}
+            >
+              <Image src={currentTrack.image ?? currentTrack.coverUrl ?? ''} alt="" fill className="object-cover" sizes="40px" />
             </div>
 
-            <div className="hidden sm:block flex-shrink-0"><WaveformBars isPlaying={isPlaying} /></div>
+            {/* Title + artist — taps to expand, takes remaining space */}
+            <div
+              onClick={() => setIsExpanded(true)}
+              className="flex-1 min-w-0 cursor-pointer"
+              role="button" tabIndex={-1}
+            >
+              <p className="text-sm font-semibold text-white truncate leading-tight">{currentTrack.title}</p>
+              <p className="text-[11px] text-[#9CA3AF] truncate">{currentTrack.artist}</p>
+            </div>
 
-            {/* Controls */}
-            <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Like */}
+            <motion.button whileTap={{ scale: 0.85 }}
+              onClick={() => currentTrack && toggleLike(currentTrack.id)}
+              className={`p-2 flex-shrink-0 transition-colors ${liked ? 'text-[#D40000]' : 'text-[#9CA3AF]'}`}
+              aria-label={liked ? 'Unlike' : 'Like'}>
+              <Heart className="w-4 h-4" fill={liked ? 'currentColor' : 'none'} />
+            </motion.button>
+
+            {/* Mute toggle — accessible volume on mobile */}
+            <motion.button whileTap={{ scale: 0.85 }} onClick={handleMuteToggle}
+              className="p-2 flex-shrink-0 text-[#9CA3AF]"
+              aria-label={isMuted || effectiveVolume === 0 ? 'Unmute' : 'Mute'}>
+              {isMuted || effectiveVolume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </motion.button>
+
+            {/* Prev */}
+            <motion.button whileTap={{ scale: 0.9 }} onClick={previousTrack}
+              className="p-1.5 flex-shrink-0 text-[#9CA3AF]" aria-label="Previous">
+              <SkipBack className="w-4 h-4" />
+            </motion.button>
+
+            {/* Play / Pause */}
+            <motion.button whileTap={{ scale: 0.92 }} onClick={() => setIsPlaying(!isPlaying)}
+              className="w-9 h-9 flex-shrink-0 rounded-full bg-[#D40000] flex items-center justify-center shadow-md shadow-[#D40000]/40"
+              aria-label={isPlaying ? 'Pause' : 'Play'}>
+              {isPlaying ? <Pause className="w-4 h-4 fill-current text-white" /> : <Play className="w-4 h-4 fill-current text-white ml-0.5" />}
+            </motion.button>
+
+            {/* Next */}
+            <motion.button whileTap={{ scale: 0.9 }} onClick={nextTrack}
+              className="p-1.5 flex-shrink-0 text-[#9CA3AF]" aria-label="Next">
+              <SkipForward className="w-4 h-4" />
+            </motion.button>
+          </div>
+
+          {/* ── DESKTOP layout (≥ lg) ── */}
+          <div className="hidden lg:flex items-center gap-4">
+            {/* Track info */}
+            <div onClick={() => setIsExpanded(true)} className="flex items-center gap-3 w-64 flex-shrink-0 cursor-pointer group/info"
+              role="button" tabIndex={0} aria-label="Expand player" onKeyDown={(e) => e.key === 'Enter' && setIsExpanded(true)}>
+              <div className="relative w-11 h-11 flex-shrink-0 rounded-xl overflow-hidden">
+                <Image src={currentTrack.image ?? currentTrack.coverUrl ?? ''} alt="" fill className="object-cover" sizes="44px" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-white truncate group-hover/info:text-[#D40000] transition-colors">{currentTrack.title}</p>
+                <p className="text-xs text-[#9CA3AF] truncate">{currentTrack.artist}</p>
+              </div>
+              <ChevronUp className="w-4 h-4 text-[#9CA3AF] flex-shrink-0 group-hover/info:text-white transition-colors" />
+            </div>
+
+            <div className="flex-shrink-0"><WaveformBars isPlaying={isPlaying} /></div>
+
+            {/* Controls — centred */}
+            <div className="flex-1 flex items-center justify-center gap-1">
               <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={previousTrack}
                 className="p-2 rounded-xl text-[#9CA3AF] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-all" aria-label="Previous">
                 <SkipBack className="w-4 h-4" />
@@ -437,41 +503,21 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
               </motion.button>
             </div>
 
-            {/* Desktop seek bar — between controls and volume */}
-            <div className="hidden lg:flex items-center gap-2 flex-1 max-w-sm min-w-0">
-              <span className="text-[11px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-8 text-right">{formatDuration(currentTime)}</span>
-              <div className="flex-1 group/slider">
-                <Slider seek value={currentTime} max={displayDuration || 1} step={0.1} onChange={handleSeek} accent ariaLabel="Track progress" />
-              </div>
-              <span className="text-[11px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-8">{formatDuration(displayDuration)}</span>
-            </div>
-
-            {/* Like + Volume — desktop only */}
-            <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
+            {/* Like + Volume — right side */}
+            <div className="flex items-center gap-2 w-64 flex-shrink-0 justify-end">
               <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                 onClick={() => currentTrack && toggleLike(currentTrack.id)}
                 className={`p-2 rounded-xl transition-all ${liked ? 'text-[#D40000]' : 'text-[#9CA3AF] hover:text-white'}`}
                 aria-label={liked ? 'Unlike' : 'Like'}>
                 <Heart className="w-4 h-4" fill={liked ? 'currentColor' : 'none'} />
               </motion.button>
-              <div className="flex items-center gap-2">
-                <button onClick={handleMuteToggle} className="text-[#9CA3AF] hover:text-white transition-colors" aria-label={isMuted ? 'Unmute' : 'Mute'}>
-                  {isMuted || effectiveVolume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </button>
-                <div className="w-24 group/slider">
-                  <Slider value={effectiveVolume} max={1} step={0.02} onChange={handleVolumeChange} ariaLabel="Volume" />
-                </div>
+              <button onClick={handleMuteToggle} className="text-[#9CA3AF] hover:text-white transition-colors flex-shrink-0" aria-label={isMuted ? 'Unmute' : 'Mute'}>
+                {isMuted || effectiveVolume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+              <div className="w-24 group/slider">
+                <Slider value={effectiveVolume} max={1} step={0.02} onChange={handleVolumeChange} ariaLabel="Volume" />
               </div>
             </div>
-          </div>
-
-          {/* Mobile seek bar — shown below main row on small screens */}
-          <div className="lg:hidden flex items-center gap-2 mt-2 pb-1">
-            <span className="text-[10px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-7 text-right">{formatDuration(currentTime)}</span>
-            <div className="flex-1 group/slider">
-              <Slider seek value={currentTime} max={displayDuration || 1} step={0.1} onChange={handleSeek} accent ariaLabel="Track progress" />
-            </div>
-            <span className="text-[10px] text-[#9CA3AF] tabular-nums flex-shrink-0 w-7">{formatDuration(displayDuration)}</span>
           </div>
         </div>
       </motion.div>

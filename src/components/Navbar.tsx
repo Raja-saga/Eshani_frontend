@@ -8,6 +8,7 @@ import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/nextjs';
 import SearchBar from './SearchBar';
 import { useToggle } from '@/hooks';
 import useSubscriptionStore from '@/store/subscriptionStore';
+import EshaniLogo from './EshaniLogo';
 
 interface NavbarProps {
   className?: string;
@@ -29,12 +30,9 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
       <div className="px-4 lg:px-8 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/">
-            <motion.div whileHover={{ scale: 1.05 }} className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
-                <span className="text-white font-bold text-xl">E</span>
-              </div>
-              <span className="hidden sm:inline font-bold text-xl gradient-text">ESHANI</span>
+          <Link href="/" aria-label="ESHANI Home">
+            <motion.div whileHover={{ scale: 1.05 }} className="flex items-center">
+              <EshaniLogo width={110} height={30} className="text-white" />
             </motion.div>
           </Link>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Music2 } from 'lucide-react';
+import EshaniLogo from './EshaniLogo';
 
 const IgIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="w-4 h-4">
@@ -60,13 +60,8 @@ export default function Footer() {
           {/* Brand */}
           <div className="space-y-5">
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#D40000] flex items-center justify-center" aria-hidden>
-                  <Music2 className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-poppins,sans-serif)' }}>
-                  ESH<span className="text-[#D40000]">ANI</span>
-                </span>
+              <div className="flex items-center">
+                <EshaniLogo width={120} height={32} className="text-white" />
               </div>
               <p className="text-sm text-[#6B7280] leading-relaxed">
                 Every track, every release —<br />direct to you.

@@ -60,11 +60,8 @@ export function useLiveCatalog(): LiveCatalog {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then(({ songs: apiSongs }: { songs: ApiSong[] }) => {
         if (!apiSongs?.length) return;
-        const mapped = apiSongs.map(mapApiSong);
-        // API songs first (newest), then any mockData songs not in DB
-        const apiIds = new Set(mapped.map((s) => s.id));
-        const mockOnly = MOCK_SONGS.filter((s) => !apiIds.has(s.id));
-        setSongs([...mapped, ...mockOnly]);
+        // DB has songs — show only DB songs, no mock YouTube fallback
+        setSongs(apiSongs.map(mapApiSong));
       })
       .catch(() => {
         /* keep mockData as fallback */

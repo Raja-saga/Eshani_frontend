@@ -1,11 +1,11 @@
 ﻿'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { SongRow, Footer } from '@/components';
-import { FEATURED_PLAYLISTS } from '@/data/mockData';
 import useLibraryStore from '@/store/libraryStore';
 import { useLiveCollections } from '@/hooks/useLiveCollections';
 import { Heart, Clock, ListMusic, Disc3, Layers, Play, ArrowRight, HeartOff } from 'lucide-react';
@@ -36,7 +36,18 @@ const EmptyState = ({ icon: Icon, message, action }: { icon: React.ElementType; 
 );
 
 export default function LibraryPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('liked');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Read tab ONLY from the URL — this is the single source of truth.
+  // When the user clicks a tab, we update the URL (replace, no history entry).
+  // This way the URL always matches what's shown, so back/forward never ghost-redirects.
+  const rawTab = searchParams.get('tab') as Tab | null;
+  const activeTab: Tab = rawTab && TABS.some(t => t.key === rawTab) ? rawTab : 'liked';
+
+  const setActiveTab = (tab: Tab) => {
+    router.replace(`/library?tab=${tab}`, { scroll: false });
+  };
   const {
     likedSongIds,
     savedAlbumIds,
@@ -52,6 +63,14 @@ export default function LibraryPage() {
   const { songs: allSongs } = useLiveCatalog();
   const { albums: allAlbums } = useLiveAlbums();
   const { collections } = useLiveCollections();
+
+  const [officialPlaylists, setOfficialPlaylists] = useState<{ id: string; title: string; image_url: string; track_count: number }[]>([]);
+  useEffect(() => {
+    fetch('/api/playlists')
+      .then(r => r.json())
+      .then(d => setOfficialPlaylists(d.playlists ?? []))
+      .catch(() => {});
+  }, []);
 
   const likedSongs = useMemo(
     () => allSongs.filter((t) => likedSongIds.includes(t.id)),
@@ -128,7 +147,7 @@ export default function LibraryPage() {
       {/* Content */}
       <section className="container-premium pb-16">
         <AnimatePresence mode="wait">
-          {/* â”€â”€ Liked Songs â”€â”€ */}
+          {/* â"€â"€ Liked Songs â"€â"€ */}
           {activeTab === 'liked' && (
             <motion.div key="liked" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               {likedSongs.length === 0 ? (
@@ -165,7 +184,7 @@ export default function LibraryPage() {
             </motion.div>
           )}
 
-          {/* â”€â”€ Recently Played â”€â”€ */}
+          {/* â"€â"€ Recently Played â"€â"€ */}
           {activeTab === 'recent' && (
             <motion.div key="recent" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               {recentlyPlayed.length === 0 ? (
@@ -202,7 +221,7 @@ export default function LibraryPage() {
             </motion.div>
           )}
 
-          {/* â”€â”€ Playlists â”€â”€ */}
+          {/* â"€â"€ Playlists â"€â"€ */}
           {activeTab === 'playlists' && (
             <motion.div key="playlists" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               {/* Official playlists */}
@@ -210,18 +229,24 @@ export default function LibraryPage() {
                 Official Playlists
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-                {FEATURED_PLAYLISTS.map((pl) => (
+                {officialPlaylists.map((pl) => (
                   <Link
                     key={pl.id}
                     href={`/playlists/${pl.id}`}
                     className="flex items-center gap-4 p-4 rounded-2xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.07)] transition-all group"
                   >
-                    <div className="relative w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden">
-                      <Image src={pl.image} alt={pl.title} fill className="object-cover" sizes="56px" />
+                    <div className="relative w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden bg-[#181818]">
+                      {pl.image_url ? (
+                        <Image src={pl.image_url} alt={pl.title} fill className="object-cover" sizes="56px" unoptimized />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-[rgba(212,0,0,0.1)]">
+                          <ListMusic className="w-5 h-5 text-[#D40000]" />
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-white truncate">{pl.title}</p>
-                      <p className="text-xs text-[#9CA3AF] mt-0.5">{pl.trackCount} tracks</p>
+                      <p className="text-xs text-[#9CA3AF] mt-0.5">{Number(pl.track_count ?? 0)} tracks</p>
                     </div>
                     <ArrowRight className="w-4 h-4 text-[#9CA3AF] group-hover:text-[#D40000] transition-colors ml-auto flex-shrink-0" />
                   </Link>
@@ -273,7 +298,7 @@ export default function LibraryPage() {
             </motion.div>
           )}
 
-          {/* â”€â”€ Saved Albums â”€â”€ */}
+          {/* â"€â"€ Saved Albums â"€â"€ */}
           {activeTab === 'albums' && (
             <motion.div key="albums" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               {savedAlbums.length === 0 ? (
@@ -328,7 +353,7 @@ export default function LibraryPage() {
             </motion.div>
           )}
 
-          {/* â”€â”€ Collections â”€â”€ */}
+          {/* â"€â"€ Collections â"€â"€ */}
           {activeTab === 'collections' && (
             <motion.div key="collections" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

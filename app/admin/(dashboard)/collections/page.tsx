@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Loader2, Plus, Trash2, Pencil, X, Check, Layers, Music2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, Pencil, X, Check, Layers, Music2, Upload, ImageIcon } from 'lucide-react';
 
 interface Collection {
   id: string; name: string; description: string; image_url: string; song_count: number;
@@ -24,6 +24,93 @@ export default function AdminCollectionsPage() {
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newImage, setNewImage] = useState('');
+  const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageError, setImageError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setImageUploading(true); setImageError('');
+    try {
+      const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+      const key = `covers/collection-${Date.now()}.${ext}`;
+      const res = await fetch('/api/admin/upload-file', {
+        method: 'POST',
+        headers: { 'x-file-key': key, 'x-content-type': file.type },
+        body: file,
+      });
+      if (!res.ok) throw new Error();
+      const { publicUrl } = await res.json();
+      setNewImage(publicUrl);
+    } catch {
+      setImageError('Upload failed. Try paste URL instead.');
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  // Edit collection
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editImage, setEditImage] = useState('');
+  const [editImageMode, setEditImageMode] = useState<'upload' | 'url'>('upload');
+  const [editImageUploading, setEditImageUploading] = useState(false);
+  const [editImageError, setEditImageError] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const editFileRef = useRef<HTMLInputElement>(null);
+
+  const openEdit = (col: Collection) => {
+    setEditingId(col.id);
+    setEditName(col.name);
+    setEditDesc(col.description ?? '');
+    setEditImage(col.image_url ?? '');
+    setEditImageMode('upload');
+    setEditImageError('');
+  };
+
+  const handleEditImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setEditImageUploading(true); setEditImageError('');
+    try {
+      const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+      const key = `covers/collection-${Date.now()}.${ext}`;
+      const res = await fetch('/api/admin/upload-file', {
+        method: 'POST',
+        headers: { 'x-file-key': key, 'x-content-type': file.type },
+        body: file,
+      });
+      if (!res.ok) throw new Error();
+      const { publicUrl } = await res.json();
+      setEditImage(publicUrl);
+    } catch {
+      setEditImageError('Upload failed. Try paste URL instead.');
+    } finally {
+      setEditImageUploading(false);
+    }
+  };
+
+  const handleEditSave = async () => {
+    if (!editingId || !editName.trim()) return;
+    setEditSaving(true);
+    try {
+      await fetch(`/api/admin/collections/${editingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editName, description: editDesc, imageUrl: editImage }),
+      });
+      setCollections(prev => prev.map(c =>
+        c.id === editingId ? { ...c, name: editName, description: editDesc, image_url: editImage } : c
+      ));
+      setEditingId(null);
+    } catch { setError('Failed to save changes'); }
+    finally { setEditSaving(false); }
+  };
 
   // Song management
   const [managingId, setManagingId] = useState<string | null>(null);
@@ -52,7 +139,7 @@ export default function AdminCollectionsPage() {
       });
       const { collection } = await res.json();
       setCollections(prev => [...prev, { ...collection, song_count: 0 }]);
-      setNewName(''); setNewDesc(''); setNewImage(''); setShowCreate(false);
+      setNewName(''); setNewDesc(''); setNewImage(''); setImageError(''); setImageMode('upload'); setShowCreate(false);
     } catch { setError('Failed to create collection'); }
     finally { setSaving(false); }
   };
@@ -130,12 +217,63 @@ export default function AdminCollectionsPage() {
               <input className={inputCls} placeholder="Short description" value={newDesc} onChange={e => setNewDesc(e.target.value)} />
             </div>
           </div>
-          <div>
-            <label className="text-xs text-[#9CA3AF] mb-1.5 block">Cover Image URL</label>
-            <input className={inputCls} placeholder="https://..." value={newImage} onChange={e => setNewImage(e.target.value)} />
+          {/* Cover image — upload or URL */}
+          <div className="space-y-2">
+            <label className="text-xs text-[#9CA3AF] block">Cover Image</label>
+
+            {/* Preview */}
+            {newImage ? (
+              <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/[0.08] bg-[#0f0f0f]">
+                <Image src={newImage} alt="preview" fill className="object-cover" unoptimized />
+                <button
+                  type="button"
+                  onClick={() => setNewImage('')}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center hover:bg-black"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
+              </div>
+            ) : (
+              <div className="w-20 h-20 rounded-xl border border-dashed border-white/[0.12] bg-[#0f0f0f] flex items-center justify-center">
+                <ImageIcon className="w-6 h-6 text-[#333]" />
+              </div>
+            )}
+
+            {/* Mode toggle */}
+            <div className="flex rounded-lg bg-[#0f0f0f] border border-white/[0.08] p-0.5 gap-0.5 w-fit">
+              {(['upload', 'url'] as const).map(m => (
+                <button key={m} type="button" onClick={() => setImageMode(m)}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${imageMode === m ? 'bg-[#D40000] text-white' : 'text-[#9CA3AF] hover:text-white'}`}>
+                  {m === 'upload' ? 'Upload File' : 'Paste URL'}
+                </button>
+              ))}
+            </div>
+
+            {imageMode === 'upload' ? (
+              <div>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFile} />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={imageUploading}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-dashed border-white/[0.15] text-sm text-[#9CA3AF] hover:text-white hover:border-white/30 transition-colors disabled:opacity-50"
+                >
+                  {imageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {imageUploading ? 'Uploading...' : 'Choose image from computer'}
+                </button>
+                {imageError && <p className="text-xs text-[#D40000] mt-1">{imageError}</p>}
+              </div>
+            ) : (
+              <input
+                className={inputCls}
+                placeholder="https://..."
+                value={newImage}
+                onChange={e => setNewImage(e.target.value)}
+              />
+            )}
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setShowCreate(false)} className="flex-1 py-2.5 rounded-xl border border-white/[0.08] text-[#9CA3AF] text-sm hover:text-white transition-colors">Cancel</button>
+            <button onClick={() => { setShowCreate(false); setNewName(''); setNewDesc(''); setNewImage(''); setImageError(''); setImageMode('upload'); }} className="flex-1 py-2.5 rounded-xl border border-white/[0.08] text-[#9CA3AF] text-sm hover:text-white transition-colors">Cancel</button>
             <button onClick={handleCreate} disabled={saving || !newName.trim()} className="flex-1 py-2.5 rounded-xl bg-[#D40000] text-white text-sm font-semibold hover:bg-[#b50000] disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
               Create
@@ -176,14 +314,101 @@ export default function AdminCollectionsPage() {
                   <Music2 className="w-3.5 h-3.5" /> Manage Songs
                 </button>
                 <button
+                  onClick={() => openEdit(col)}
+                  className="p-1.5 rounded-lg text-[#6B7280] hover:text-white hover:bg-white/[0.06] transition-all"
+                  title="Edit collection"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button
                   onClick={() => handleDelete(col.id)}
                   className="p-1.5 rounded-lg text-[#6B7280] hover:text-[#D40000] hover:bg-[#D40000]/10 transition-all"
+                  title="Delete collection"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Edit collection modal */}
+      {editingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75" onClick={e => { if (e.target === e.currentTarget) setEditingId(null); }}>
+          <div className="bg-[#141414] border border-white/[0.1] rounded-2xl p-6 w-full max-w-md space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-white font-semibold">Edit Collection</p>
+              <button onClick={() => setEditingId(null)} className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-white/[0.05]"><X className="w-4 h-4" /></button>
+            </div>
+
+            {/* Name */}
+            <div>
+              <label className="text-xs text-[#9CA3AF] mb-1.5 block">Name *</label>
+              <input className={inputCls} value={editName} onChange={e => setEditName(e.target.value)} placeholder="Collection name" />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="text-xs text-[#9CA3AF] mb-1.5 block">Description</label>
+              <input className={inputCls} value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Short description" />
+            </div>
+
+            {/* Cover image */}
+            <div className="space-y-2">
+              <label className="text-xs text-[#9CA3AF] block">Cover Image</label>
+
+              {editImage ? (
+                <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/[0.08] bg-[#0f0f0f]">
+                  <Image src={editImage} alt="preview" fill className="object-cover" unoptimized />
+                  <button type="button" onClick={() => setEditImage('')}
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center hover:bg-black">
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-xl border border-dashed border-white/[0.12] bg-[#0f0f0f] flex items-center justify-center">
+                  <ImageIcon className="w-6 h-6 text-[#333]" />
+                </div>
+              )}
+
+              {/* Mode toggle */}
+              <div className="flex rounded-lg bg-[#0f0f0f] border border-white/[0.08] p-0.5 gap-0.5 w-fit">
+                {(['upload', 'url'] as const).map(m => (
+                  <button key={m} type="button" onClick={() => setEditImageMode(m)}
+                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${editImageMode === m ? 'bg-[#D40000] text-white' : 'text-[#9CA3AF] hover:text-white'}`}>
+                    {m === 'upload' ? 'Upload File' : 'Paste URL'}
+                  </button>
+                ))}
+              </div>
+
+              {editImageMode === 'upload' ? (
+                <div>
+                  <input ref={editFileRef} type="file" accept="image/*" className="hidden" onChange={handleEditImageFile} />
+                  <button type="button" onClick={() => editFileRef.current?.click()} disabled={editImageUploading}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-dashed border-white/[0.15] text-sm text-[#9CA3AF] hover:text-white hover:border-white/30 transition-colors disabled:opacity-50">
+                    {editImageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {editImageUploading ? 'Uploading...' : 'Choose image from computer'}
+                  </button>
+                  {editImageError && <p className="text-xs text-[#D40000] mt-1">{editImageError}</p>}
+                </div>
+              ) : (
+                <input className={inputCls} placeholder="https://..." value={editImage} onChange={e => setEditImage(e.target.value)} />
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setEditingId(null)}
+                className="flex-1 py-2.5 rounded-xl border border-white/[0.08] text-[#9CA3AF] text-sm hover:text-white transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleEditSave} disabled={editSaving || !editName.trim()}
+                className="flex-1 py-2.5 rounded-xl bg-[#D40000] text-white text-sm font-semibold hover:bg-[#b50000] disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Save Changes
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

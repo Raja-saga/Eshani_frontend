@@ -8,6 +8,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import EshaniLogo from '@/components/EshaniLogo';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -28,12 +29,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Content */}
         <div className="relative z-10 flex flex-col h-full p-12">
           {/* Logo */}
-          <Link
-            href="/"
-            className="text-3xl font-black tracking-tight text-white"
-            style={{ fontFamily: 'var(--font-poppins, sans-serif)' }}
-          >
-            ESH<span className="text-[#D40000]">ANI</span>
+          <Link href="/" aria-label="ESHANI Home">
+            <EshaniLogo width={120} height={32} className="text-white" />
           </Link>
 
           {/* Quote */}
@@ -53,12 +50,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* ── RIGHT PANEL — Clerk Form ─────────────────────── */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-[#000000]">
         {/* Mobile logo */}
-        <Link
-          href="/"
-          className="lg:hidden mb-10 text-2xl font-black tracking-tight text-white"
-          style={{ fontFamily: 'var(--font-poppins, sans-serif)' }}
-        >
-          ESH<span className="text-[#D40000]">ANI</span>
+        <Link href="/" className="lg:hidden mb-10" aria-label="ESHANI Home">
+          <EshaniLogo width={100} height={28} className="text-white" />
         </Link>
 
         {/* Clerk component will render here */}

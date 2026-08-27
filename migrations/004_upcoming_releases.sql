@@ -8,3 +8,5 @@ CREATE TABLE IF NOT EXISTS upcoming_releases (
   pre_orders   INTEGER DEFAULT 0,
   created_at   TEXT DEFAULT (datetime('now'))
 );
+
+  

@@ -10,6 +10,8 @@ const PUBLIC_KEYS = [
   'twitter_url',
   'apple_music_url',
   'new_release_banner',
+  'hero_image',
+  'eshani_hero_image',
 ];
 
 const DEFAULTS: Record<string, string> = {
@@ -20,6 +22,8 @@ const DEFAULTS: Record<string, string> = {
   twitter_url:       '',
   apple_music_url:   '',
   new_release_banner: 'false',
+  hero_image:        '',
+  eshani_hero_image: '',
 };
 
 export async function GET() {

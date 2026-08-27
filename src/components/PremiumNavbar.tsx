@@ -582,9 +582,6 @@ const PremiumNavbar: React.FC<PremiumNavbarProps> = ({ className = '' }) => {
                         }}
                       />
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-white truncate">
-                          {user?.firstName ?? user?.username ?? 'User'}
-                        </p>
                         <p className="text-[10px] text-[#9CA3AF] truncate">
                           {user?.primaryEmailAddress?.emailAddress ?? ''}
                         </p>

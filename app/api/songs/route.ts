@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
     const genre    = searchParams.get('genre');
-    const limit    = Math.min(parseInt(searchParams.get('limit') ?? '50'), 100);
+    const limit    = Math.min(parseInt(searchParams.get('limit') ?? '50'), 500);
     const featured = searchParams.get('featured') === 'true';
 
     let sql = 'SELECT * FROM songs';

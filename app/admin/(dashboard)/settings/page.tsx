@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Save, Loader2, Check, AlertCircle, Globe, Music2, Link } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import { Save, Loader2, Check, AlertCircle, Globe, Music2, Link, Upload, ImageIcon, X } from 'lucide-react';
 
 interface Settings {
   platform_name:     string;
@@ -13,6 +14,8 @@ interface Settings {
   apple_music_url:   string;
   contact_enabled:   string;
   new_release_banner: string;
+  hero_image:        string;
+  eshani_hero_image: string;
 }
 
 const DEFAULT: Settings = {
@@ -25,7 +28,122 @@ const DEFAULT: Settings = {
   apple_music_url:   '',
   contact_enabled:   'true',
   new_release_banner: 'false',
+  hero_image:        '',
+  eshani_hero_image: '',
 };
+
+function ImageUploadSlot({
+  label, description, value, settingKey, onSave,
+}: {
+  label: string; description: string; value: string;
+  settingKey: string; onSave: (key: string, url: string) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState(value ?? '');
+  const [urlInput, setUrlInput] = useState(value ?? '');
+  const [mode, setMode] = useState<'upload' | 'url'>('upload');
+  const [err, setErr] = useState('');
+
+  useEffect(() => { setPreview(value ?? ''); setUrlInput(value ?? ''); }, [value]);
+
+  const upload = async (file: File) => {
+    setUploading(true); setErr('');
+    try {
+      const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+      const key = `covers/${settingKey}-${Date.now()}.${ext}`;
+      const res = await fetch('/api/admin/upload-file', {
+        method: 'POST',
+        headers: { 'x-file-key': key, 'x-content-type': file.type },
+        body: file,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const { publicUrl } = await res.json();
+      setPreview(publicUrl);
+      setUrlInput(publicUrl);
+      onSave(settingKey, publicUrl);
+    } catch {
+      setErr('Upload failed. Try paste URL instead.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) upload(f);
+    e.target.value = '';
+  };
+
+  const handleUrlSave = () => {
+    setPreview(urlInput);
+    onSave(settingKey, urlInput);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm text-white font-medium">{label}</p>
+        <p className="text-xs text-[#9CA3AF]">{description}</p>
+      </div>
+
+      {/* Preview */}
+      <div className="relative w-full h-40 rounded-xl overflow-hidden bg-[#0f0f0f] border border-white/[0.08] flex items-center justify-center">
+        {preview ? (
+          <>
+            <Image src={preview} alt={label} fill className="object-cover" unoptimized />
+            <button
+              type="button"
+              onClick={() => { setPreview(''); setUrlInput(''); onSave(settingKey, ''); }}
+              className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors z-10"
+            >
+              <X className="w-3.5 h-3.5 text-white" />
+            </button>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-[#4B5563]">
+            <ImageIcon className="w-8 h-8" />
+            <span className="text-xs">No image set</span>
+          </div>
+        )}
+      </div>
+
+      {/* Mode tabs */}
+      <div className="flex rounded-lg bg-[#0f0f0f] border border-white/[0.08] p-0.5 gap-0.5">
+        {(['upload', 'url'] as const).map(m => (
+          <button key={m} type="button" onClick={() => setMode(m)}
+            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${mode === m ? 'bg-[#D40000] text-white' : 'text-[#9CA3AF] hover:text-white'}`}>
+            {m === 'upload' ? 'Upload File' : 'Paste URL'}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'upload' ? (
+        <div>
+          <input ref={ref} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+          <button type="button" onClick={() => ref.current?.click()} disabled={uploading}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-white/[0.15] text-sm text-[#9CA3AF] hover:text-white hover:border-white/30 transition-colors disabled:opacity-50">
+            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            {uploading ? 'Uploading...' : 'Choose image'}
+          </button>
+          {err && <p className="text-xs text-[#D40000] mt-1">{err}</p>}
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <input
+            type="url" value={urlInput} onChange={e => setUrlInput(e.target.value)}
+            placeholder="https://..."
+            className="flex-1 bg-[#0f0f0f] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white placeholder-[#4B5563] outline-none focus:border-[#D40000]/40 transition-colors"
+          />
+          <button type="button" onClick={handleUrlSave}
+            className="px-3 py-2 rounded-xl bg-[#D40000] text-white text-sm font-semibold hover:bg-[#b50000] transition-colors">
+            Set
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Settings>(DEFAULT);
@@ -44,6 +162,17 @@ export default function AdminSettingsPage() {
 
   const set = (key: keyof Settings, value: string) =>
     setSettings(prev => ({ ...prev, [key]: value }));
+
+  const saveImage = async (key: string, url: string) => {
+    set(key as keyof Settings, url);
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: url }),
+      });
+    } catch { /* silent — user can always hit Save */ }
+  };
 
   const toggle = (key: keyof Settings) =>
     set(key, settings[key] === 'true' ? 'false' : 'true');
@@ -136,6 +265,29 @@ export default function AdminSettingsPage() {
           <Toggle k="contact_enabled"   label="Contact Form"     sub="Allow fans to send messages from the website" />
           <Toggle k="new_release_banner" label="New Release Banner" sub="Show a coming-soon banner on the homepage" />
         </div>
+      </div>
+
+      {/* Site Images */}
+      <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5 space-y-6">
+        <div>
+          <h2 className="text-sm font-semibold text-white">Site Images</h2>
+          <p className="text-xs text-[#9CA3AF] mt-0.5">Upload or paste a URL — changes apply instantly after saving.</p>
+        </div>
+        <ImageUploadSlot
+          label="Homepage Hero Photo"
+          description="The artist photo shown in the homepage hero card (right side)"
+          value={settings.hero_image}
+          settingKey="hero_image"
+          onSave={saveImage}
+        />
+        <div className="h-px bg-white/[0.06]" />
+        <ImageUploadSlot
+          label="Eshani Page Banner"
+          description="Full-width background image on the /eshani artist page"
+          value={settings.eshani_hero_image}
+          settingKey="eshani_hero_image"
+          onSave={saveImage}
+        />
       </div>
 
       {/* Social links */}

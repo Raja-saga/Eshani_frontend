@@ -6,7 +6,6 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SongRow, Footer } from '@/components';
-import { ALBUMS, ALL_SONGS } from '@/data/mockData';
 import { formatDuration } from '@/utils/helpers';
 import useLibraryStore from '@/store/libraryStore';
 import usePlayerStore from '@/store/playerStore';
@@ -64,35 +63,6 @@ export default function AlbumDetailPage() {
   const { setQueue, playTrack, currentTrack, isPlaying, setIsPlaying } = usePlayerStore();
 
   useEffect(() => {
-    // Try mockData first
-    const mockAlbum = ALBUMS.find((a) => a.id === id);
-    if (mockAlbum) {
-      const mockSongs = ALL_SONGS.filter((s) => mockAlbum.songIds.includes(s.id));
-      setAlbumData({
-        title: mockAlbum.title,
-        image: mockAlbum.image,
-        releaseDate: mockAlbum.releaseDate,
-        description: mockAlbum.description,
-        duration: mockAlbum.duration,
-      });
-      setAlbumSongs(mockSongs.map((s) => ({
-        id: s.id,
-        title: s.title,
-        artist: s.artist,
-        album: mockAlbum.title,
-        duration: s.duration,
-        image: s.image,
-        coverUrl: s.image,
-        audioUrl: s.audioUrl ?? '',
-        genre: s.genre ?? '',
-        plays: s.plays ?? 0,
-        isPremium: s.isPremium ?? false,
-      })));
-      setLoading(false);
-      return;
-    }
-
-    // Fallback to API for DB albums
     fetch(`/api/albums/${id}`)
       .then(async (r) => {
         if (r.status === 404) { setNotFoundState(true); return; }

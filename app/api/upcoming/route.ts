@@ -9,42 +9,34 @@ interface UpcomingRow {
   release_date: string | null;
   genre: string | null;
   pre_orders: number;
+  created_at: string;
 }
 
+async function ensureTable() {
+  await query(`
+    CREATE TABLE IF NOT EXISTS upcoming_releases (
+      id           TEXT PRIMARY KEY,
+      title        TEXT NOT NULL,
+      artist       TEXT NOT NULL DEFAULT 'ESHANI',
+      image_url    TEXT NOT NULL DEFAULT '',
+      release_date TEXT,
+      genre        TEXT DEFAULT '',
+      pre_orders   INTEGER DEFAULT 0,
+      created_at   TEXT DEFAULT (datetime('now'))
+    )
+  `);
+}
+
+// Public endpoint — no auth required, used by homepage + discover page
 export async function GET() {
   try {
-    await query(`
-      CREATE TABLE IF NOT EXISTS upcoming_releases (
-        id           TEXT PRIMARY KEY,
-        title        TEXT NOT NULL,
-        artist       TEXT NOT NULL DEFAULT 'ESHANI',
-        image_url    TEXT NOT NULL DEFAULT '',
-        release_date TEXT,
-        genre        TEXT DEFAULT '',
-        pre_orders   INTEGER DEFAULT 0,
-        created_at   TEXT DEFAULT (datetime('now'))
-      )
-    `);
-
+    await ensureTable();
     const rows = await query<UpcomingRow>(
-      `SELECT id, title, artist, image_url, release_date, genre, pre_orders
+      `SELECT id, title, artist, image_url, release_date, genre, pre_orders, created_at
        FROM upcoming_releases
        ORDER BY release_date ASC, created_at ASC`
     );
-
-    const releases = rows.map(r => ({
-      id: r.id,
-      title: r.title,
-      artist: r.artist,
-      image: r.image_url,
-      releaseDate: r.release_date ?? '',
-      genre: r.genre ?? '',
-      preOrders: r.pre_orders,
-    }));
-
-    return NextResponse.json({ releases }, {
-      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
-    });
+    return NextResponse.json({ releases: rows });
   } catch (err) {
     console.error('GET /api/upcoming:', err);
     return NextResponse.json({ releases: [] });

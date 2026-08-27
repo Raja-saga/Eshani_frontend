@@ -78,7 +78,7 @@ export default function AdminDashboardPage() {
                 <div key={song.id} className="flex items-center gap-3">
                   <span className="text-xs text-[#9CA3AF] w-4 text-right flex-shrink-0">{i + 1}</span>
                   <div className="relative w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-[#0f0f0f]">
-                    <Image src={song.image_url} alt={song.title} fill className="object-cover" sizes="32px" />
+                    <Image src={song.image_url} alt={song.title} fill className="object-cover" sizes="32px" unoptimized />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-xs font-medium truncate">{song.title}</p>

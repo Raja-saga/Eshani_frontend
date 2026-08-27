@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import EshaniLogo from './EshaniLogo';
 
@@ -37,19 +39,44 @@ const NAV_LINKS = [
   { label: 'About',    href: '/eshani' },
 ];
 
-const SOCIAL = [
-  { label: 'Instagram', Icon: IgIcon, href: 'https://instagram.com/eshaniofficial' },
-  { label: 'YouTube',   Icon: YtIcon, href: 'https://youtube.com/@eshani' },
-  { label: 'X',         Icon: XIcon,  href: 'https://x.com/eshanimusic' },
-];
+interface SiteSettings {
+  instagram_url: string;
+  youtube_url: string;
+  twitter_url: string;
+  spotify_url: string;
+  apple_music_url: string;
+}
 
-const STREAMING = [
-  { label: 'Spotify',     Icon: SpotifyIcon, href: 'https://open.spotify.com' },
-  { label: 'Apple Music', Icon: AppleIcon,   href: 'https://music.apple.com' },
-  { label: 'YouTube',     Icon: YtIcon,       href: 'https://youtube.com/@eshani' },
-];
+const DEFAULTS: SiteSettings = {
+  instagram_url: '',
+  youtube_url: '',
+  twitter_url: '',
+  spotify_url: '',
+  apple_music_url: '',
+};
 
 export default function Footer() {
+  const [links, setLinks] = useState<SiteSettings>(DEFAULTS);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(d => setLinks(prev => ({ ...prev, ...d.settings })))
+      .catch(() => {});
+  }, []);
+
+  const social = [
+    links.instagram_url && { label: 'Instagram', Icon: IgIcon, href: links.instagram_url },
+    links.youtube_url   && { label: 'YouTube',   Icon: YtIcon, href: links.youtube_url },
+    links.twitter_url   && { label: 'X',         Icon: XIcon,  href: links.twitter_url },
+  ].filter(Boolean) as { label: string; Icon: () => React.JSX.Element; href: string }[];
+
+  const streaming = [
+    links.spotify_url     && { label: 'Spotify',     Icon: SpotifyIcon, href: links.spotify_url },
+    links.apple_music_url && { label: 'Apple Music', Icon: AppleIcon,   href: links.apple_music_url },
+    links.youtube_url     && { label: 'YouTube',     Icon: YtIcon,      href: links.youtube_url },
+  ].filter(Boolean) as { label: string; Icon: () => React.JSX.Element; href: string }[];
+
   return (
     <footer className="bg-black border-t border-white/[0.06]" role="contentinfo">
       <div className="max-w-6xl mx-auto px-6 pt-14 pb-8 lg:pt-16">
@@ -64,19 +91,21 @@ export default function Footer() {
                 <EshaniLogo width={120} height={32} className="text-white" />
               </div>
               <p className="text-sm text-[#6B7280] leading-relaxed">
-                Every track, every release —<br />direct to you.
+                Every track, every release &mdash;<br />direct to you.
               </p>
             </div>
 
-            {/* Social icons */}
-            <div className="flex gap-2">
-              {SOCIAL.map(({ label, Icon, href }) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
-                  className="p-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[#6B7280] hover:text-[#D40000] hover:border-[#D40000]/20 transition-all">
-                  <Icon />
-                </a>
-              ))}
-            </div>
+            {/* Social icons — only shown if URL is set in admin */}
+            {social.length > 0 && (
+              <div className="flex gap-2">
+                {social.map(({ label, Icon, href }) => (
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
+                    className="p-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[#6B7280] hover:text-[#D40000] hover:border-[#D40000]/20 transition-all">
+                    <Icon />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Navigation */}
@@ -96,22 +125,26 @@ export default function Footer() {
           <div className="space-y-4">
             <p className="text-xs font-semibold text-white uppercase tracking-widest">Listen On</p>
             <div className="flex flex-col gap-2.5">
-              {STREAMING.map(({ label, Icon, href }) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 text-sm text-[#6B7280] hover:text-white transition-colors w-fit group">
-                  <span className="p-1.5 rounded-md bg-white/[0.04] group-hover:bg-white/[0.08] transition-colors">
-                    <Icon />
-                  </span>
-                  {label}
-                </a>
-              ))}
+              {streaming.length === 0 ? (
+                <p className="text-sm text-[#4B5563]">Links coming soon</p>
+              ) : (
+                streaming.map(({ label, Icon, href }) => (
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 text-sm text-[#6B7280] hover:text-white transition-colors w-fit group">
+                    <span className="p-1.5 rounded-md bg-white/[0.04] group-hover:bg-white/[0.08] transition-colors">
+                      <Icon />
+                    </span>
+                    {label}
+                  </a>
+                ))
+              )}
             </div>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="mt-12 pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-[#4B5563]">
-          <p>© {new Date().getFullYear()} ESHANI. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} ESHANI. All rights reserved.</p>
           <div className="flex gap-5">
             <Link href="#" className="hover:text-[#9CA3AF] transition-colors">Privacy</Link>
             <Link href="#" className="hover:text-[#9CA3AF] transition-colors">Terms</Link>

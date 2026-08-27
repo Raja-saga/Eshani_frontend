@@ -418,7 +418,7 @@ export default function AdminSongsPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="relative w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-[#0f0f0f]">
-                          <Image src={song.image_url} alt={song.title} fill className="object-cover" sizes="36px" />
+                          <Image src={song.image_url} alt={song.title} fill className="object-cover" sizes="36px" unoptimized />
                         </div>
                         <div className="min-w-0">
                           <p className="text-white font-medium truncate">{song.title}</p>

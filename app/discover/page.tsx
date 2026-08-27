@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useCallback, Suspense } from 'react';
+import React, { useCallback, useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -14,10 +14,10 @@ import {
   Footer,
 } from '@/components';
 import {
-  UPCOMING_RELEASES,
-  FEATURED_PLAYLISTS,
   TOP_PICKS,
+  UpcomingRelease,
 } from '@/data/mockData';
+import type { PlaylistCardItem } from '@/components/PlaylistCard';
 import usePlayerStore from '@/store/playerStore';
 import useLibraryStore from '@/store/libraryStore';
 import { Track as StoreTrack } from '@/types';
@@ -65,6 +65,35 @@ function DiscoverContent() {
   const { setQueue, playTrack } = usePlayerStore();
   const { songs: allSongs, popularSongs, recentSongs, newUploads } = useLiveCatalog();
   const { albums: liveAlbums } = useLiveAlbums();
+  const [upcomingReleases, setUpcomingReleases] = useState<UpcomingRelease[]>([]);
+  const [officialPlaylists, setOfficialPlaylists] = useState<PlaylistCardItem[]>([]);
+
+  useEffect(() => {
+    fetch('/api/playlists')
+      .then(r => r.json())
+      .then(d => setOfficialPlaylists(
+        (d.playlists ?? []).map((p: { id: string; title: string; description?: string; image_url?: string; track_count: number; curator?: string; mood?: string }) => ({
+          id: p.id, title: p.title, description: p.description ?? '',
+          image: p.image_url ?? '', trackCount: Number(p.track_count ?? 0),
+          curator: p.curator ?? 'ESHANI', mood: p.mood ?? '',
+        }))
+      ))
+      .catch(() => {});
+    fetch('/api/upcoming')
+      .then(r => r.json())
+      .then(d => setUpcomingReleases(
+        (d.releases ?? []).map((r: { id: string; title: string; artist: string; image_url: string; release_date: string | null; genre: string | null; pre_orders: number }) => ({
+          id: r.id,
+          title: r.title,
+          artist: r.artist,
+          image: r.image_url,
+          releaseDate: r.release_date ?? '',
+          genre: r.genre ?? '',
+          preOrders: r.pre_orders,
+        }))
+      ))
+      .catch(() => {});
+  }, []);
 
   // Top Picks: new uploads first, then curated mockData TOP_PICKS
   const topPickIds = new Set(TOP_PICKS.map((s) => s.id));
@@ -187,9 +216,9 @@ function DiscoverContent() {
               <Play className="w-4 h-4 fill-current" />
               Play All
             </motion.button>
-            <motion.a href="/songs?section=popular" whileHover={{ x: 4 }} className="text-sm font-medium text-[#9CA3AF] hover:text-[#D40000] transition-colors pb-1">
+            <Link href="/songs?section=popular" className="text-sm font-medium text-[#9CA3AF] hover:text-[#D40000] transition-colors pb-1">
               See All
-            </motion.a>
+            </Link>
           </div>
         </div>
         <motion.div variants={gridVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} className="grid grid-cols-1 lg:grid-cols-2 gap-1">
@@ -224,9 +253,9 @@ function DiscoverContent() {
               <Play className="w-4 h-4 fill-current" />
               Play All
             </motion.button>
-            <motion.a href="/songs?section=recent" whileHover={{ x: 4 }} className="text-sm font-medium text-[#9CA3AF] hover:text-[#D40000] transition-colors pb-1">
+            <Link href="/songs?section=recent" className="text-sm font-medium text-[#9CA3AF] hover:text-[#D40000] transition-colors pb-1">
               See All
-            </motion.a>
+            </Link>
           </div>
         </div>
         <motion.div variants={gridVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} className="grid grid-cols-1 lg:grid-cols-2 gap-1">
@@ -271,7 +300,7 @@ function DiscoverContent() {
           seeAllHref="/playlists"
         />
         <motion.div variants={gridVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
-          {FEATURED_PLAYLISTS.map((p, i) => (
+          {officialPlaylists.map((p, i) => (
             <PlaylistCard key={p.id} playlist={p} index={i} />
           ))}
         </motion.div>
@@ -283,11 +312,11 @@ function DiscoverContent() {
       <Section id="upcoming">
         <SectionHeader
           title="Coming Soon"
-          subtitle="Upcoming drops â€” get notified first"
+          subtitle="Upcoming drops - get notified first"
           seeAllHref="/upcoming"
         />
         <Carousel cardMinWidth={180}>
-          {UPCOMING_RELEASES.slice(0, 3).map((r, i) => (
+          {upcomingReleases.slice(0, 3).map((r, i) => (
             <UpcomingTrackCard key={r.id} release={r} index={i} />
           ))}
         </Carousel>

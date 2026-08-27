@@ -14,7 +14,7 @@ export async function GET() {
     queryOne<{ count: number }>('SELECT COUNT(*) as count FROM playlists WHERE is_official = 1'),
     queryOne<{ total: number }>('SELECT SUM(plays) as total FROM songs'),
     query<{ id: string; title: string; artist: string; image_url: string; plays: number }>(
-      'SELECT id, title, artist, image_url, plays FROM songs ORDER BY plays DESC LIMIT 8'
+      'SELECT id, title, artist, image_url, plays FROM songs ORDER BY plays DESC, title ASC'
     ),
     query<{ genre: string; count: number }>(
       "SELECT genre, COUNT(*) as count FROM songs WHERE genre IS NOT NULL GROUP BY genre ORDER BY count DESC"
@@ -36,9 +36,9 @@ export async function GET() {
     }
   } catch { /* ignore */ }
 
-  // Anonymous vs signed-in plays from play_history
-  const anonPlays = recentPlays.filter(p => !p.user_id).length;
-  const authPlays = recentPlays.filter(p => p.user_id).length;
+  // Anonymous (user_id = 'guest') vs signed-in plays from play_history
+  const anonPlays = recentPlays.filter(p => !p.user_id || p.user_id === 'guest').length;
+  const authPlays = recentPlays.filter(p => p.user_id && p.user_id !== 'guest').length;
 
   return NextResponse.json({
     songs:       songs?.count ?? 0,

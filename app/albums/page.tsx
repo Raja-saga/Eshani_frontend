@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Footer } from '@/components';
-import { ALBUMS } from '@/data/mockData';
 import { formatDuration } from '@/utils/helpers';
 import useLibraryStore from '@/store/libraryStore';
 import { Bookmark, BookmarkCheck, Disc3 } from 'lucide-react';
@@ -54,19 +53,14 @@ const cardVariants = {
 
 export default function AlbumsPage() {
   const { toggleSaveAlbum, isAlbumSaved } = useLibraryStore();
-  const [albums, setAlbums] = useState<DisplayAlbum[]>(ALBUMS as unknown as DisplayAlbum[]);
+  const [albums, setAlbums] = useState<DisplayAlbum[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/albums')
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(({ albums: apiAlbums }: { albums: ApiAlbum[] }) => {
-        if (!apiAlbums?.length) return;
-        const mapped = apiAlbums.map(mapApiAlbum);
-        // DB albums first (newest), then any mockData albums not in DB
-        const dbIds = new Set(mapped.map(a => a.id));
-        const mockOnly = (ALBUMS as unknown as DisplayAlbum[]).filter(a => !dbIds.has(a.id));
-        setAlbums([...mapped, ...mockOnly]);
+        setAlbums((apiAlbums ?? []).map(mapApiAlbum));
       })
       .catch(() => {})
       .finally(() => setLoading(false));

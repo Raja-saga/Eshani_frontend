@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -24,18 +24,18 @@ import {
 import {
   FEATURED_SONGS,
   TOP_PICKS,
-  UPCOMING_RELEASES,
   ESHANI_PHOTOS,
+  UpcomingRelease,
 } from '@/data/mockData';
 import usePlayerStore from '@/store/playerStore';
 import useLibraryStore from '@/store/libraryStore';
 import { Track as StoreTrack } from '@/types';
 import { useLiveAlbums } from '@/hooks/useLiveAlbums';
 
-// â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Constants â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 const ESHANI_BIO =
-  `ESHANI is an independent pop/R&B artist blending Kannada roots with global sounds â€” from hip-hop to indie pop. With hits like "Not Your Typical Brown Girl" and "FREAK", she's carved out a sound that is entirely her own. No label. No middleman. Just music that moves.`;
+  `ESHANI is an independent pop/R&B artist blending Kannada roots with global sounds â€" from hip-hop to indie pop. With hits like "Not Your Typical Brown Girl" and "FREAK", she's carved out a sound that is entirely her own. No label. No middleman. Just music that moves.`;
 
 const SOCIAL_LINKS = [
   { icon: Mail, href: 'mailto:contact@eshanimusic.com', label: 'Email' },
@@ -50,7 +50,7 @@ const STATS = [
   { value: '8+', label: 'Years Active' },
 ];
 
-// â”€â”€â”€ Animation Variants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Animation Variants â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
@@ -62,7 +62,7 @@ const gridVariants = {
   visible: { opacity: 1, transition: { staggerChildren: 0.07, delayChildren: 0.1 } },
 };
 
-// â”€â”€â”€ Section Wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Section Wrapper â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 const Section = ({
   children,
@@ -84,7 +84,7 @@ const SectionDivider = () => (
   </div>
 );
 
-// â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function toStoreTrack(t: typeof TOP_PICKS[0], liked = false): StoreTrack {
   return {
@@ -103,7 +103,7 @@ function toStoreTrack(t: typeof TOP_PICKS[0], liked = false): StoreTrack {
   };
 }
 
-// â”€â”€â”€ Play All Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Play All Button â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 const PlayAllButton = ({ tracks }: { tracks: typeof TOP_PICKS }) => {
   const { setQueue, playTrack } = usePlayerStore();
@@ -128,12 +128,30 @@ const PlayAllButton = ({ tracks }: { tracks: typeof TOP_PICKS }) => {
   );
 };
 
-// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Main Page â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 export default function EshaniPage() {
   const { setQueue, playTrack } = usePlayerStore();
   const { isLiked, toggleLike } = useLibraryStore();
   const { albums } = useLiveAlbums();
+  const [upcomingReleases, setUpcomingReleases] = useState<UpcomingRelease[]>([]);
+  const [eshaniHeroImage, setEshaniHeroImage] = useState('');
+
+  useEffect(() => {
+    fetch('/api/upcoming')
+      .then(r => r.json())
+      .then(d => setUpcomingReleases(
+        (d.releases ?? []).map((r: { id: string; title: string; artist: string; image_url: string; release_date: string | null; genre: string | null; pre_orders: number }) => ({
+          id: r.id, title: r.title, artist: r.artist,
+          image: r.image_url, releaseDate: r.release_date ?? '', genre: r.genre ?? '', preOrders: r.pre_orders,
+        }))
+      ))
+      .catch(() => {});
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(d => { if (d.settings?.eshani_hero_image) setEshaniHeroImage(d.settings.eshani_hero_image); })
+      .catch(() => {});
+  }, []);
 
   const handlePlayDiscography = useCallback(() => {
     const queue = FEATURED_SONGS.map((t) => toStoreTrack(t, isLiked(t.id)));
@@ -148,12 +166,12 @@ export default function EshaniPage() {
   return (
     <div className="bg-[#000000] text-[#FFFFFF] overflow-hidden">
 
-      {/* â”€â”€ HERO BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ HERO BANNER â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <section className="relative min-h-[70vh] flex items-end overflow-hidden bg-[#000000]">
         {/* Background image */}
         <div className="absolute inset-0">
           <Image
-            src={ESHANI_PHOTOS.hero}
+            src={eshaniHeroImage || ESHANI_PHOTOS.hero}
             alt="ESHANI"
             fill
             priority
@@ -299,7 +317,7 @@ export default function EshaniPage() {
         </div>
       </section>
 
-      {/* â”€â”€ BIOGRAPHY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ BIOGRAPHY â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <Section id="biography">
         <motion.div
           variants={fadeUp}
@@ -334,7 +352,7 @@ export default function EshaniPage() {
 
       <SectionDivider />
 
-      {/* â”€â”€ POPULAR SONGS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ POPULAR SONGS â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <Section id="popular-songs" className="relative">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -395,7 +413,7 @@ export default function EshaniPage() {
 
       <SectionDivider />
 
-      {/* â”€â”€ FEATURED TRACKS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ FEATURED TRACKS â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <Section id="featured-tracks">
         <SectionHeader
           title="Featured Tracks"
@@ -423,7 +441,7 @@ export default function EshaniPage() {
 
       <SectionDivider />
 
-      {/* â”€â”€ ALBUMS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ ALBUMS â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <Section id="albums" className="relative">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -464,7 +482,7 @@ export default function EshaniPage() {
 
       <SectionDivider />
 
-      {/* â”€â”€ UPCOMING RELEASES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ UPCOMING RELEASES â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <Section id="upcoming" className="relative">
         <div
           className="absolute inset-0 pointer-events-none"
@@ -477,11 +495,11 @@ export default function EshaniPage() {
         <div className="relative z-10">
           <SectionHeader
             title="Coming Soon"
-            subtitle="Upcoming drops â€” be the first to know"
+            subtitle="Upcoming drops - be the first to know"
             seeAllHref="/discover"
           />
           <Carousel cardMinWidth={180}>
-            {UPCOMING_RELEASES.map((release, i) => (
+            {upcomingReleases.map((release, i) => (
               <UpcomingTrackCard key={release.id} release={release} index={i} />
             ))}
           </Carousel>
@@ -490,7 +508,7 @@ export default function EshaniPage() {
 
       <SectionDivider />
 
-      {/* â”€â”€ CONNECT CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ CONNECT CTA â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <Section id="connect" className="relative overflow-hidden">
         <motion.div
           animate={{ scale: [1, 1.12, 1], opacity: [0.3, 0.5, 0.3] }}
@@ -552,7 +570,7 @@ export default function EshaniPage() {
         </div>
       </Section>
 
-      {/* â”€â”€ FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â"€â"€ FOOTER â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <Footer />
 
       {/* Bottom padding for persistent audio player */}

@@ -57,18 +57,23 @@ function ReleaseModal({
 
   async function handleImageUpload(file: File) {
     setUploading(true);
+    setError('');
     try {
-      const presignRes = await fetch('/api/admin/upload-presign', {
+      const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+      const key = `covers/release-${Date.now()}.${ext}`;
+      const res = await fetch('/api/admin/upload-file', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, contentType: file.type, folder: 'covers' }),
+        headers: { 'x-file-key': key, 'x-content-type': file.type },
+        body: file,
       });
-      if (!presignRes.ok) throw new Error('Presign failed');
-      const { uploadUrl, publicUrl } = await presignRes.json();
-      await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+      if (!res.ok) {
+        const { error: e } = await res.json().catch(() => ({}));
+        throw new Error(e || 'Upload failed');
+      }
+      const { publicUrl } = await res.json();
       setForm(prev => ({ ...prev, imageUrl: publicUrl }));
-    } catch {
-      setError('Image upload failed. Paste a URL instead.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Image upload failed. Paste a URL instead.');
     } finally {
       setUploading(false);
     }
@@ -109,7 +114,7 @@ function ReleaseModal({
               onClick={() => fileRef.current?.click()}
             >
               {form.imageUrl ? (
-                <Image src={form.imageUrl} alt="cover" fill className="object-cover" />
+                <Image src={form.imageUrl} alt="cover" fill className="object-cover" unoptimized />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                   <Upload className="w-5 h-5 text-[#9CA3AF]" />
@@ -333,7 +338,7 @@ export default function AdminReleasesPage() {
                     <div className="flex items-center gap-3">
                       <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-[#1A1A1A] flex-shrink-0">
                         {r.image_url ? (
-                          <Image src={r.image_url} alt={r.title} fill className="object-cover" />
+                          <Image src={r.image_url} alt={r.title} fill className="object-cover" unoptimized />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <Music className="w-4 h-4 text-[#9CA3AF]" />

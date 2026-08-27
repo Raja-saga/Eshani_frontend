@@ -12,7 +12,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Users } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import Image from 'next/image';
 import { UpcomingRelease } from '@/data/mockData';
 
@@ -22,13 +22,6 @@ interface UpcomingTrackCardProps {
 }
 
 const UpcomingTrackCard: React.FC<UpcomingTrackCardProps> = ({ release, index = 0 }) => {
-  const formatPreOrders = (count?: number) => {
-    if (!count) return '0';
-    if (count >= 1_000_000) return (count / 1_000_000).toFixed(1) + 'M';
-    if (count >= 1_000) return (count / 1_000).toFixed(0) + 'K';
-    return count.toString();
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -47,6 +40,7 @@ const UpcomingTrackCard: React.FC<UpcomingTrackCardProps> = ({ release, index = 
           fill
           className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          unoptimized
         />
 
         {/* Coming Soon Badge */}
@@ -68,17 +62,9 @@ const UpcomingTrackCard: React.FC<UpcomingTrackCardProps> = ({ release, index = 
         </h4>
         <p className="text-sm text-[#9CA3AF] line-clamp-1">{release.artist}</p>
 
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <Calendar className="w-3 h-3 text-[#D40000]" />
-            <span className="text-xs text-[#D40000] font-medium">{release.releaseDate}</span>
-          </div>
-          {release.preOrders && (
-            <div className="flex items-center gap-1">
-              <Users className="w-3 h-3 text-[#9CA3AF]" />
-              <span className="text-xs text-[#9CA3AF]">{formatPreOrders(release.preOrders)}</span>
-            </div>
-          )}
+        <div className="flex items-center gap-1.5">
+          <Calendar className="w-3 h-3 text-[#D40000]" />
+          <span className="text-xs text-[#D40000] font-medium">{release.releaseDate}</span>
         </div>
       </div>
     </motion.div>

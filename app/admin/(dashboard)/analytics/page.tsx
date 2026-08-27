@@ -32,7 +32,7 @@ export default function AdminAnalyticsPage() {
 
   useEffect(() => { load(); }, []);
 
-  const maxPlays   = stats?.topSongs[0]?.plays ?? 1;
+  const maxPlays   = Math.max(stats?.topSongs[0]?.plays ?? 0, 1);
   const totalGenre = stats?.genres.reduce((s, g) => s + g.count, 0) ?? 1;
 
   const overviewCards = [
@@ -130,31 +130,47 @@ export default function AdminAnalyticsPage() {
 
         {/* Top songs */}
         <div className="lg:col-span-2 bg-[#141414] border border-white/[0.06] rounded-2xl p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-[#D40000]" /> Top Songs by Plays
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-[#D40000]" /> All Songs by Plays
+            </h2>
+            {stats?.topSongs && (
+              <span className="text-[10px] text-[#6B7280]">{stats.topSongs.length} songs</span>
+            )}
+          </div>
           {loading ? (
             <div className="space-y-3">{[...Array(6)].map((_, i) => (
               <div key={i} className="h-10 bg-white/[0.03] rounded-xl animate-pulse" />
             ))}</div>
           ) : !stats?.topSongs.length ? (
-            <p className="text-[#9CA3AF] text-sm text-center py-8">No play data yet</p>
+            <p className="text-[#9CA3AF] text-sm text-center py-8">No songs in catalog yet</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 scrollbar-thin">
               {stats.topSongs.map((song, i) => (
                 <div key={song.id} className="flex items-center gap-3 group">
-                  <span className="text-xs text-[#6B7280] w-4 text-right flex-shrink-0 font-mono">{i + 1}</span>
+                  <span className="text-xs text-[#6B7280] w-5 text-right flex-shrink-0 font-mono">{i + 1}</span>
                   <div className="relative w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-[#0f0f0f]">
-                    <Image src={song.image_url} alt={song.title} fill className="object-cover" sizes="36px" />
+                    {song.image_url ? (
+                      <Image src={song.image_url} alt={song.title} fill className="object-cover" sizes="36px" unoptimized />
+                    ) : (
+                      <div className="absolute inset-0 bg-[#1a1a1a] flex items-center justify-center">
+                        <Music className="w-3.5 h-3.5 text-[#333]" />
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex justify-between items-center">
                       <p className="text-white text-xs font-medium truncate pr-2">{song.title}</p>
-                      <span className="text-[#9CA3AF] text-xs flex-shrink-0 tabular-nums">{fmtPlays(song.plays)}</span>
+                      <span className={`text-xs flex-shrink-0 tabular-nums font-semibold ${song.plays > 0 ? 'text-white' : 'text-[#4B5563]'}`}>
+                        {fmtPlays(song.plays)}
+                      </span>
                     </div>
                     <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all"
-                        style={{ width: `${(song.plays / maxPlays) * 100}%`, background: COLORS[i % COLORS.length] }} />
+                      <div className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: song.plays > 0 ? `${Math.max((song.plays / maxPlays) * 100, 2)}%` : '0%',
+                          background: COLORS[i % COLORS.length],
+                        }} />
                     </div>
                   </div>
                 </div>

@@ -25,7 +25,37 @@ interface AlbumCardProps {
   badgeVariant?: 'primary' | 'secondary' | 'success';
   releaseDate?: string;
   index?: number;
+  /** When true, clicking the card plays the track instead of navigating to the album page */
+  playOnClick?: boolean;
 }
+
+const CardWrapper: React.FC<{
+  playOnClick: boolean;
+  href: string;
+  label: string;
+  onPlayClick: () => void;
+  children: React.ReactNode;
+}> = ({ playOnClick, href, label, onPlayClick, children }) => {
+  if (playOnClick) {
+    return (
+      <div
+        className="block cursor-pointer"
+        aria-label={`Play ${label}`}
+        onClick={onPlayClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && onPlayClick()}
+      >
+        {children}
+      </div>
+    );
+  }
+  return (
+    <Link href={href} className="block" aria-label={label}>
+      {children}
+    </Link>
+  );
+};
 
 const BADGE_STYLES: Record<string, string> = {
   primary: 'bg-[rgba(212,0,0,0.85)] text-white',
@@ -47,6 +77,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({
   badgeVariant = 'primary',
   releaseDate,
   index = 0,
+  playOnClick = false,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -54,9 +85,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({
   const { toggleSaveAlbum, isAlbumSaved } = useLibraryStore();
   const isLiked = isAlbumSaved(id);
 
-  const handlePlay = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const playSong = () => {
     const storeTrack: StoreTrack = {
       id,
       title,
@@ -72,6 +101,12 @@ const AlbumCard: React.FC<AlbumCardProps> = ({
     };
     playTrack(storeTrack);
     onPlay?.();
+  };
+
+  const handlePlay = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    playSong();
   };
 
   const handleLike = (e: React.MouseEvent) => {
@@ -91,7 +126,12 @@ const AlbumCard: React.FC<AlbumCardProps> = ({
       onMouseLeave={() => setIsHovered(false)}
       className="group"
     >
-      <Link href={`/albums/${id}`} className="block" aria-label={`${title}${artist ? ` by ${artist}` : ''}`}>
+      <CardWrapper
+        playOnClick={playOnClick}
+        href={`/albums/${id}`}
+        label={`${title}${artist ? ` by ${artist}` : ''}`}
+        onPlayClick={playSong}
+      >
         {/* Image Container */}
         <div className="relative mb-4 overflow-hidden rounded-2xl aspect-square bg-[#181818]">
           <Image
@@ -184,7 +224,7 @@ const AlbumCard: React.FC<AlbumCardProps> = ({
             )}
           </div>
         </div>
-      </Link>
+      </CardWrapper>
     </motion.div>
   );
 };

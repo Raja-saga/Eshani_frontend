@@ -68,16 +68,31 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
   const [ytReady, setYtReady] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  // Play count tracking — reset per track load
+  const playCountedRef = useRef(false);
+
   const {
     currentTrack, isPlaying, currentTime, volume, repeat, shuffle,
     setIsPlaying, setCurrentTime, nextTrack, previousTrack, setRepeat, toggleShuffle, setVolume, clearQueue,
   } = usePlayerStore();
 
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, userId: clerkUserId } = useAuth();
   const { toggleLike, isLiked, addToRecentlyPlayed } = useLibraryStore();
   const liked = currentTrack ? isLiked(currentTrack.id) : false;
   const isYouTubeTrack = !!currentTrack?.youtubeId;
   const effectiveVolume = isMuted ? 0 : volume;
+
+  // On mount: if Zustand persisted isPlaying=true but the audio element is fresh (no src loaded yet),
+  // reset to paused so the UI matches reality. The src+play will re-engage when the user clicks Play.
+  // This fixes the "Pause button shown but nothing playing" state after a page reload.
+  useEffect(() => {
+    const store = usePlayerStore.getState();
+    if (store.isPlaying && store.currentTrack && !store.currentTrack.youtubeId) {
+      // Audio element is brand-new on mount — definitely not playing yet
+      setIsPlaying(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount only
 
   // Clear player when user signs out
   useEffect(() => {
@@ -254,6 +269,28 @@ const AudioPlayer: React.FC<{ className?: string }> = ({ className = '' }) => {
   useEffect(() => {
     if (currentTrack?.id && isPlaying) addToRecentlyPlayed(currentTrack.id);
   }, [currentTrack?.id]); // eslint-disable-line
+
+  // Reset play-counted flag on each new track load
+  useEffect(() => {
+    playCountedRef.current = false;
+  }, [currentTrack?.id]);
+
+  // Record a play after 2 continuous seconds of playback (once per track load)
+  useEffect(() => {
+    if (!currentTrack?.id || !isPlaying || playCountedRef.current) return;
+    const trackId = currentTrack.id;
+    const timer = setTimeout(() => {
+      const store = usePlayerStore.getState();
+      if (store.currentTrack?.id !== trackId || !store.isPlaying) return;
+      playCountedRef.current = true;
+      fetch(`/api/songs/${trackId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: clerkUserId ?? null }),
+      }).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [currentTrack?.id, isPlaying]); // eslint-disable-line
 
   const handleSeek = useCallback((val: number) => {
     setCurrentTime(val);

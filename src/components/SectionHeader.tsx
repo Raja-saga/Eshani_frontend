@@ -13,6 +13,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 interface SectionHeaderProps {
   title: string;
@@ -72,17 +73,18 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
         )}
       </div>
 
-      {/* See All Link */}
+      {/* See All Link — uses Next.js Link to keep client-side navigation (no page reload = player stays alive) */}
       {showSeeAll && (
-        <motion.a
-          href={seeAllHref}
-          whileHover={{ x: 4 }}
+        <Link
+          href={seeAllHref!}
           className="flex items-center gap-1.5 text-sm font-medium text-[#9CA3AF] hover:text-[#D40000] transition-colors duration-200 flex-shrink-0 ml-4 pb-1"
           aria-label={`${seeAllLabel} — ${title}`}
         >
-          <span>{seeAllLabel}</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </motion.a>
+          <motion.span whileHover={{ x: 4 }} className="flex items-center gap-1.5">
+            <span>{seeAllLabel}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </motion.span>
+        </Link>
       )}
     </motion.div>
   );

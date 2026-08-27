@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import Image from 'next/image';
 import { PlaylistCard, SectionHeader, Footer } from '@/components';
-import { FEATURED_PLAYLISTS } from '@/data/mockData';
+import type { PlaylistCardItem } from '@/components/PlaylistCard';
 import { useUserPlaylists } from '@/hooks/useUserPlaylists';
-import { Plus, X, ListMusic, Trash2, ArrowRight } from 'lucide-react';
+import { Plus, X, ListMusic, Trash2, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function PlaylistsPage() {
   const { playlists: localPlaylists, createPlaylist, deletePlaylist } = useUserPlaylists();
@@ -15,6 +14,29 @@ export default function PlaylistsPage() {
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [officialPlaylists, setOfficialPlaylists] = useState<PlaylistCardItem[]>([]);
+  const [loadingOfficial, setLoadingOfficial] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/playlists')
+      .then(r => r.json())
+      .then(d => setOfficialPlaylists(
+        (d.playlists ?? []).map((p: {
+          id: string; title: string; description?: string;
+          image_url?: string; track_count: number; curator?: string; mood?: string;
+        }) => ({
+          id: p.id,
+          title: p.title,
+          description: p.description ?? '',
+          image: p.image_url ?? '',
+          trackCount: Number(p.track_count ?? 0),
+          curator: p.curator ?? 'ESHANI',
+          mood: p.mood ?? '',
+        }))
+      ))
+      .catch(() => {})
+      .finally(() => setLoadingOfficial(false));
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -246,15 +268,23 @@ export default function PlaylistsPage() {
       {/* Official Playlists */}
       <section className="container-premium pb-16">
         <div className="h-px bg-[rgba(255,255,255,0.06)] mb-10" />
-        <SectionHeader
-          title="Official Playlists"
-          subtitle="Curated by ESHANI Editorial"
-        />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
-          {FEATURED_PLAYLISTS.map((pl, i) => (
-            <PlaylistCard key={pl.id} playlist={pl} index={i} />
-          ))}
-        </div>
+        <SectionHeader title="Official Playlists" subtitle="Curated by ESHANI Editorial" />
+        {loadingOfficial ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="w-7 h-7 animate-spin text-[#D40000]" />
+          </div>
+        ) : officialPlaylists.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+            <ListMusic className="w-10 h-10 text-[#4B5563]" />
+            <p className="text-[#9CA3AF]">No official playlists yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
+            {officialPlaylists.map((pl, i) => (
+              <PlaylistCard key={pl.id} playlist={pl} index={i} />
+            ))}
+          </div>
+        )}
       </section>
 
       <Footer />

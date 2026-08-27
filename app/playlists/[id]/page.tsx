@@ -1,18 +1,27 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { useParams, notFound } from 'next/navigation';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SongRow, Footer } from '@/components';
-import { FEATURED_PLAYLISTS } from '@/data/mockData';
 import { useLiveCatalog } from '@/hooks/useLiveCatalog';
 import useLibraryStore from '@/store/libraryStore';
 import { useUserPlaylists } from '@/hooks/useUserPlaylists';
 import usePlayerStore from '@/store/playerStore';
 import { Track as StoreTrack } from '@/types';
-import { ChevronLeft, Play, Pause, ListMusic, Music2, Pencil, Check, X, Plus } from 'lucide-react';
+import { ChevronLeft, Play, Pause, ListMusic, Music2, Pencil, Check, X, Plus, Loader2 } from 'lucide-react';
+
+interface OfficialPlaylist {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  curator: string | null;
+  mood: string | null;
+  track_count: number;
+}
 
 export default function PlaylistDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,51 +34,47 @@ export default function PlaylistDetailPage() {
 
   const { songs: allSongs } = useLiveCatalog();
 
-  const officialPlaylist = FEATURED_PLAYLISTS.find((p) => p.id === id);
   const localPlaylist = localPlaylists.find((p) => p.id === id);
-
-  if (!officialPlaylist && !localPlaylist) {
-    notFound();
-  }
-
   const isLocal = !!localPlaylist;
 
-  const playlistName = isLocal ? localPlaylist!.name : officialPlaylist!.title;
-  const playlistDescription = isLocal ? localPlaylist!.description : officialPlaylist!.description;
+  const [officialPl, setOfficialPl] = useState<OfficialPlaylist | null>(null);
+  const [officialSongIds, setOfficialSongIds] = useState<string[]>([]);
+  const [plLoading, setPlLoading] = useState(!isLocal);
+  const [notFound, setNotFound] = useState(false);
 
-  const songIds = isLocal ? localPlaylist!.songIds : (officialPlaylist?.songIds ?? []);
-  const playlistSongs = allSongs.filter((s) => songIds.includes(s.id))
+  useEffect(() => {
+    if (isLocal) { setPlLoading(false); return; }
+    setPlLoading(true);
+    fetch(`/api/playlists/${id}`)
+      .then(r => { if (!r.ok) throw new Error('not found'); return r.json(); })
+      .then(data => {
+        setOfficialPl(data.playlist);
+        setOfficialSongIds((data.songs ?? []).map((s: { id: string }) => s.id));
+      })
+      .catch(() => setNotFound(true))
+      .finally(() => setPlLoading(false));
+  }, [id, isLocal]);
+
+  const playlistName = isLocal ? localPlaylist!.name : (officialPl?.title ?? '');
+  const playlistDescription = isLocal ? localPlaylist!.description : (officialPl?.description ?? '');
+
+  const songIds = isLocal ? localPlaylist!.songIds : officialSongIds;
+  const playlistSongs = allSongs
+    .filter((s) => songIds.includes(s.id))
     .sort((a, b) => songIds.indexOf(a.id) - songIds.indexOf(b.id));
 
-  const officialImage = officialPlaylist?.image;
-
-  // Is any song from this playlist currently playing?
   const isPlaylistActive = playlistSongs.some((s) => s.id === currentTrack?.id);
   const isPlaylistPlaying = isPlaylistActive && isPlaying;
 
   const handlePlayAll = useCallback(() => {
     if (playlistSongs.length === 0) return;
-    if (isPlaylistPlaying) {
-      setIsPlaying(false);
-      return;
-    }
-    if (isPlaylistActive) {
-      setIsPlaying(true);
-      return;
-    }
+    if (isPlaylistPlaying) { setIsPlaying(false); return; }
+    if (isPlaylistActive) { setIsPlaying(true); return; }
     const queue: StoreTrack[] = playlistSongs.map((t) => ({
-      id: t.id,
-      title: t.title,
-      artist: t.artist,
-      album: t.album ?? '',
-      duration: t.duration,
-      image: t.image, coverUrl: t.image,
-      audioUrl: t.audioUrl ?? '',
-      genre: t.genre ?? '',
-      plays: t.plays ?? 0,
-      liked: isLiked(t.id),
-      youtubeId: t.youtubeId,
-      isPremium: t.isPremium,
+      id: t.id, title: t.title, artist: t.artist, album: t.album ?? '',
+      duration: t.duration, image: t.image, coverUrl: t.image,
+      audioUrl: t.audioUrl ?? '', genre: t.genre ?? '', plays: t.plays ?? 0,
+      liked: isLiked(t.id), youtubeId: t.youtubeId, isPremium: t.isPremium,
     }));
     setQueue(queue);
     if (queue[0]) playTrack(queue[0]);
@@ -81,6 +86,40 @@ export default function PlaylistDetailPage() {
     }
     setEditingName(false);
   };
+
+  if (plLoading) {
+    return (
+      <div className="bg-[#000000] text-[#FFFFFF] min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#D40000]" />
+      </div>
+    );
+  }
+
+  if (notFound || (!isLocal && !officialPl)) {
+    return (
+      <div className="bg-[#000000] text-[#FFFFFF] min-h-screen">
+        <div className="container-premium pt-24 pb-0">
+          <Link
+            href="/playlists"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[rgba(255,255,255,0.07)] border border-[rgba(255,255,255,0.12)] text-sm font-semibold text-white hover:bg-[rgba(255,255,255,0.12)] transition-all mb-8"
+          >
+            <ChevronLeft className="w-4 h-4 text-[#D40000]" />
+            All Playlists
+          </Link>
+        </div>
+        <div className="flex flex-col items-center justify-center py-32 gap-4 text-center">
+          <ListMusic className="w-12 h-12 text-[#4B5563]" />
+          <p className="text-white font-semibold text-xl">Playlist not found</p>
+          <Link href="/playlists" className="text-sm text-[#D40000] hover:underline">
+            Back to playlists
+          </Link>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const coverImage = isLocal ? undefined : (officialPl?.image_url ?? undefined);
 
   return (
     <div className="bg-[#000000] text-[#FFFFFF] min-h-screen">
@@ -107,8 +146,8 @@ export default function PlaylistDetailPage() {
         >
           {/* Cover */}
           <div className="relative w-48 h-48 sm:w-56 sm:h-56 flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl shadow-black/60">
-            {officialImage ? (
-              <Image src={officialImage} alt={playlistName} fill className="object-cover" sizes="224px" priority />
+            {coverImage ? (
+              <Image src={coverImage} alt={playlistName} fill className="object-cover" sizes="224px" priority unoptimized />
             ) : (
               <div className="w-full h-full bg-[rgba(212,0,0,0.15)] flex items-center justify-center">
                 <ListMusic className="w-16 h-16 text-[#D40000]" />
@@ -165,14 +204,14 @@ export default function PlaylistDetailPage() {
             <div className="flex items-center gap-4 text-sm text-[#9CA3AF]">
               <span className="flex items-center gap-1.5">
                 <Music2 className="w-3.5 h-3.5" />
-                {isLocal ? playlistSongs.length : officialPlaylist!.trackCount} tracks
+                {playlistSongs.length} tracks
               </span>
-              {!isLocal && officialPlaylist?.curator && (
-                <span>By {officialPlaylist.curator}</span>
+              {!isLocal && officialPl?.curator && (
+                <span>By {officialPl.curator}</span>
               )}
-              {!isLocal && officialPlaylist?.mood && (
+              {!isLocal && officialPl?.mood && (
                 <span className="px-2.5 py-0.5 rounded-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.1)] text-xs">
-                  {officialPlaylist.mood}
+                  {officialPl.mood}
                 </span>
               )}
             </div>
@@ -238,24 +277,24 @@ export default function PlaylistDetailPage() {
                 liked: isLiked(s.id), youtubeId: s.youtubeId, isPremium: s.isPremium,
               }));
               return (
-              <div key={t.id} className="group relative">
-                <SongRow
-                  track={t}
-                  index={i}
-                  liked={isLiked(t.id)}
-                  onLike={() => toggleLike(t.id)}
-                  queue={queue}
-                />
-                {isLocal && (
-                  <button
-                    onClick={() => removeSongFromPlaylist(id, t.id)}
-                    className="absolute right-12 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-[#9CA3AF] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                    aria-label={`Remove ${t.title} from playlist`}
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+                <div key={t.id} className="group relative">
+                  <SongRow
+                    track={t}
+                    index={i}
+                    liked={isLiked(t.id)}
+                    onLike={() => toggleLike(t.id)}
+                    queue={queue}
+                  />
+                  {isLocal && (
+                    <button
+                      onClick={() => removeSongFromPlaylist(id, t.id)}
+                      className="absolute right-12 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-[#9CA3AF] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                      aria-label={`Remove ${t.title} from playlist`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>

@@ -158,6 +158,7 @@ const FloatingCard: React.FC<{
 
 interface PremiumHeroProps {
   onPlayClick?: () => void;
+  heroImageUrl?: string;
 }
 
 // Pre-compute all 4 card motion value pairs at top level (not in loop)
@@ -174,6 +175,7 @@ const useCardParallax = (
 
 const PremiumHeroSection: React.FC<PremiumHeroProps> = ({
   onPlayClick,
+  heroImageUrl,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { currentTrack, isPlaying } = usePlayerStore();
@@ -383,10 +385,11 @@ const PremiumHeroSection: React.FC<PremiumHeroProps> = ({
               {/* Image frame */}
               <div className="relative w-[280px] h-[360px] sm:w-[320px] sm:h-[410px] lg:w-[360px] lg:h-[460px] xl:w-[400px] xl:h-[500px] rounded-3xl overflow-hidden border border-[rgba(255,255,255,0.1)]">
                 <Image
-                  src={ESHANI_PHOTOS.hero}
+                  src={heroImageUrl || ESHANI_PHOTOS.hero}
                   alt="ESHANI"
                   fill
                   priority
+                  unoptimized
                   className="object-cover object-top"
                   sizes="(max-width: 640px) 280px, (max-width: 1024px) 320px, 400px"
                 />

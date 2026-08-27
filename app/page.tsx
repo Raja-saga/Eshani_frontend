@@ -15,12 +15,10 @@ import {
 } from '@/components';
 
 import {
-  FEATURED_SONGS,
-  TOP_PICKS,
-  FEATURED_PLAYLISTS,
   Track,
   UpcomingRelease,
 } from '@/data/mockData';
+import type { PlaylistCardItem } from '@/components/PlaylistCard';
 import { Play } from 'lucide-react';
 import usePlayerStore from '@/store/playerStore';
 import useLibraryStore from '@/store/libraryStore';
@@ -34,6 +32,7 @@ interface SiteSettings {
   twitter_url: string;
   apple_music_url: string;
   new_release_banner: string;
+  hero_image: string;
 }
 
 // â"€â"€â"€ Animation Variants â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
@@ -115,14 +114,10 @@ const PlayAllButton = ({ tracks }: { tracks: Track[] }) => {
 export default function HomePage() {
   const { setQueue, playTrack } = usePlayerStore();
   const { toggleLike, isLiked } = useLibraryStore();
-  const { songs: allSongs, recentSongs, newUploads } = useLiveCatalog();
+  const { songs: allSongs, recentSongs } = useLiveCatalog();
 
-  // Top Picks: new uploads first, then curated mockData TOP_PICKS
-  const topPickIds = new Set(TOP_PICKS.map((s) => s.id));
-  const liveTopPicks: Track[] = [
-    ...newUploads,
-    ...allSongs.filter((s) => topPickIds.has(s.id)),
-  ];
+  // Top Picks: all live songs sorted by recency
+  const liveTopPicks: Track[] = recentSongs.slice(0, 20);
 
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({
     instagram_url: 'https://instagram.com/eshaniofficial',
@@ -131,29 +126,55 @@ export default function HomePage() {
     twitter_url: 'https://x.com/eshanimusic',
     apple_music_url: '',
     new_release_banner: 'true',
+    hero_image: '',
   });
   const [upcomingReleases, setUpcomingReleases] = useState<UpcomingRelease[]>([]);
+  const [officialPlaylists, setOfficialPlaylists] = useState<PlaylistCardItem[]>([]);
 
   useEffect(() => {
     fetch('/api/settings')
       .then(r => r.json())
       .then(d => setSiteSettings(prev => ({ ...prev, ...d.settings })))
       .catch(() => {});
+    fetch('/api/playlists')
+      .then(r => r.json())
+      .then(d => setOfficialPlaylists(
+        (d.playlists ?? []).map((p: { id: string; title: string; description?: string; image_url?: string; track_count: number; curator?: string; mood?: string }) => ({
+          id: p.id, title: p.title, description: p.description ?? '',
+          image: p.image_url ?? '', trackCount: Number(p.track_count ?? 0),
+          curator: p.curator ?? 'ESHANI', mood: p.mood ?? '',
+        }))
+      ))
+      .catch(() => {});
     fetch('/api/upcoming')
       .then(r => r.json())
-      .then(d => setUpcomingReleases(d.releases ?? []))
+      .then(d => setUpcomingReleases(
+        (d.releases ?? []).map((r: { id: string; title: string; artist: string; image_url: string; release_date: string | null; genre: string | null; pre_orders: number }) => ({
+          id: r.id,
+          title: r.title,
+          artist: r.artist,
+          image: r.image_url,
+          releaseDate: r.release_date ?? '',
+          genre: r.genre ?? '',
+          preOrders: r.pre_orders,
+        }))
+      ))
       .catch(() => {});
   }, []);
 
+  const featuredSongs = recentSongs.slice(0, 5);
+
   const handleStartListening = useCallback(() => {
-    const queue: StoreTrack[] = FEATURED_SONGS.map((t) => ({
+    const src = featuredSongs.length ? featuredSongs : recentSongs;
+    const queue: StoreTrack[] = src.map((t) => ({
       id: t.id, title: t.title, artist: t.artist, album: t.album ?? '',
       duration: t.duration, image: t.image, coverUrl: t.image,
       audioUrl: t.audioUrl ?? '', genre: t.genre ?? '', plays: t.plays ?? 0, liked: false,
     }));
+    if (!queue.length) return;
     setQueue(queue);
     playTrack(queue[0]);
-  }, [setQueue, playTrack]);
+  }, [setQueue, playTrack, featuredSongs, recentSongs]);
 
   const handlePlayPlaylist = useCallback((songIds: string[]) => {
     const songs = allSongs.filter(s => songIds.includes(s.id))
@@ -175,6 +196,7 @@ export default function HomePage() {
       {/* â"€â"€ 1. HERO â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
       <PremiumHeroSection
         onPlayClick={handleStartListening}
+        heroImageUrl={siteSettings.hero_image || undefined}
       />
 
       {/* â"€â"€ 2. FEATURED SONGS BANNER â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
@@ -189,7 +211,7 @@ export default function HomePage() {
             title="Featured Songs"
             subtitle="Hand-picked tracks making waves this week"
             seeAllHref="/songs?section=featured"
-            itemCount={FEATURED_SONGS.length}
+            itemCount={featuredSongs.length}
             showThreshold={6}
           />
         </motion.div>
@@ -199,7 +221,7 @@ export default function HomePage() {
           whileInView="visible"
           viewport={{ once: true, margin: '-60px' }}
         >
-          <FeaturedSongBanner songs={FEATURED_SONGS} />
+          <FeaturedSongBanner songs={featuredSongs} />
         </motion.div>
       </Section>
 
@@ -312,6 +334,7 @@ export default function HomePage() {
                 badgeVariant="primary"
                 releaseDate={release.releaseDate}
                 index={i}
+                playOnClick
               />
             ))}
           </motion.div>
@@ -362,10 +385,10 @@ export default function HomePage() {
             title="Featured Playlists"
             subtitle="Expertly curated collections for every mood and moment"
             seeAllHref="/playlists"
-            itemCount={FEATURED_PLAYLISTS.length}
+            itemCount={officialPlaylists.length}
             showThreshold={6}
           />
-    
+
           <motion.div
             variants={gridVariants}
             initial="hidden"
@@ -373,12 +396,11 @@ export default function HomePage() {
             viewport={{ once: true, margin: '-80px' }}
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5"
           >
-            {FEATURED_PLAYLISTS.map((playlist, i) => (
+            {officialPlaylists.map((playlist, i) => (
               <PlaylistCard
                 key={playlist.id}
                 playlist={playlist}
                 index={i}
-                onPlay={() => handlePlayPlaylist(playlist.songIds ?? [])}
               />
             ))}
           </motion.div>

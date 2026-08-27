@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { UpcomingTrackCard, Footer } from '@/components';
-import { UPCOMING_RELEASES } from '@/data/mockData';
+import { UpcomingRelease } from '@/data/mockData';
 
 const gridVariants = {
   hidden: { opacity: 0 },
@@ -11,6 +11,27 @@ const gridVariants = {
 };
 
 export default function UpcomingPage() {
+  const [releases, setReleases] = useState<UpcomingRelease[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/upcoming')
+      .then(r => r.json())
+      .then(d => setReleases(
+        (d.releases ?? []).map((r: { id: string; title: string; artist: string; image_url: string; release_date: string | null; genre: string | null; pre_orders: number }) => ({
+          id: r.id,
+          title: r.title,
+          artist: r.artist,
+          image: r.image_url,
+          releaseDate: r.release_date ?? '',
+          genre: r.genre ?? '',
+          preOrders: r.pre_orders,
+        }))
+      ))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="bg-[#000000] text-[#FFFFFF] min-h-screen">
       {/* Header */}
@@ -28,23 +49,36 @@ export default function UpcomingPage() {
             Coming Soon
           </h1>
           <p className="text-[#9CA3AF] mt-2 text-base">
-            Upcoming releases from ESHANI — be the first to know
+            Upcoming releases from ESHANI &mdash; be the first to know
           </p>
         </motion.div>
       </div>
 
       {/* Grid */}
       <section className="container-premium pb-16">
-        <motion.div
-          variants={gridVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-5"
-        >
-          {UPCOMING_RELEASES.map((release, i) => (
-            <UpcomingTrackCard key={release.id} release={release} index={i} />
-          ))}
-        </motion.div>
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-5">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="aspect-square rounded-2xl bg-white/[0.04] animate-pulse" />
+            ))}
+          </div>
+        ) : releases.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <p className="text-[#9CA3AF] text-lg">No upcoming releases yet.</p>
+            <p className="text-[#6B7280] text-sm mt-1">Check back soon for new drops.</p>
+          </div>
+        ) : (
+          <motion.div
+            variants={gridVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-5"
+          >
+            {releases.map((release, i) => (
+              <UpcomingTrackCard key={release.id} release={release} index={i} />
+            ))}
+          </motion.div>
+        )}
       </section>
 
       <Footer />

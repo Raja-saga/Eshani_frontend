@@ -2,28 +2,73 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Music2 } from 'lucide-react';
+import { Play, Music2, ListMusic, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Playlist } from '@/data/mockData';
+import usePlayerStore from '@/store/playerStore';
+import type { Track } from '@/types';
+
+export interface PlaylistCardItem {
+  id: string;
+  title: string;
+  description?: string;
+  image?: string;
+  trackCount: number;
+  curator?: string;
+  mood?: string;
+}
 
 interface PlaylistCardProps {
-  playlist: Playlist;
+  playlist: PlaylistCardItem;
   onPlay?: () => void;
   index?: number;
 }
 
-const PlaylistCard: React.FC<PlaylistCardProps> = ({
-  playlist,
-  onPlay,
-  index = 0,
-}) => {
+const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, onPlay, index = 0 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { playTrack, setQueue } = usePlayerStore();
 
-  const handlePlay = (e: React.MouseEvent) => {
+  const handlePlay = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onPlay?.();
+    if (isLoading) return;
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/playlists/${playlist.id}`);
+      const { songs } = await res.json() as { songs: Array<{
+        id: string; title: string; artist: string; album: string;
+        duration: number; image_url: string; audio_url: string;
+        genre: string; plays: number; is_premium: number;
+      }> };
+
+      if (!songs?.length) return;
+
+      const tracks: Track[] = songs.map(s => ({
+        id: s.id,
+        title: s.title,
+        artist: s.artist,
+        album: s.album ?? '',
+        duration: s.duration,
+        image: s.image_url,
+        coverUrl: s.image_url,
+        audioUrl: s.audio_url,
+        genre: s.genre ?? '',
+        plays: s.plays ?? 0,
+        liked: false,
+        isPremium: s.is_premium === 1,
+      }));
+
+      // Play first track, queue the rest
+      playTrack(tracks[0]);
+      if (tracks.length > 1) setQueue(tracks.slice(1));
+      onPlay?.();
+    } catch {
+      // silently fail — user can still click the card to open playlist
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -39,13 +84,20 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
       <Link href={`/playlists/${playlist.id}`} className="block" aria-label={`Open playlist: ${playlist.title}`}>
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden rounded-2xl mb-4 bg-[#181818]">
-          <Image
-            src={playlist.image}
-            alt={playlist.title}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          />
+          {playlist.image ? (
+            <Image
+              src={playlist.image}
+              alt={playlist.title}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              unoptimized
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-[rgba(212,0,0,0.1)]">
+              <ListMusic className="w-12 h-12 text-[#D40000]" />
+            </div>
+          )}
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
@@ -76,21 +128,23 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({
             className="absolute inset-0 flex items-center justify-center"
           >
             <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+              whileHover={{ scale: isLoading ? 1 : 1.1 }}
+              whileTap={{ scale: isLoading ? 1 : 0.9 }}
               onClick={handlePlay}
               className="w-14 h-14 rounded-full bg-[#D40000] text-white flex items-center justify-center shadow-xl shadow-black/40"
               aria-label={`Play ${playlist.title}`}
             >
-              <Play className="w-6 h-6 fill-current ml-0.5" />
+              {isLoading
+                ? <Loader2 className="w-6 h-6 animate-spin" />
+                : <Play className="w-6 h-6 fill-current ml-0.5" />}
             </motion.button>
           </motion.div>
 
-          <div className="absolute bottom-0 left-0 right-0 p-3">
-            <div className="text-xs text-[#D9D9D9]/80 font-medium">
-              {playlist.curator}
+          {playlist.curator && (
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+              <div className="text-xs text-[#D9D9D9]/80 font-medium">{playlist.curator}</div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Text Info */}

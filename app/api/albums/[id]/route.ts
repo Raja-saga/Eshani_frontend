@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       LEFT JOIN songs s         ON s.id = als.song_id
       WHERE a.id = ?
       GROUP BY a.id
-    `, [id]);
+    `, [id]as (string | number | boolean | null)[]);
 
     if (!album) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -27,7 +27,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       JOIN album_songs als ON als.song_id = s.id
       WHERE als.album_id = ?
       ORDER BY als.position ASC
-    `, [id]);
+    `, [id]as (string | number | boolean | null)[]);
 
     return NextResponse.json({ album, songs });
   } catch (err) {

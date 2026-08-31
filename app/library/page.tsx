@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { Suspense, useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -35,7 +35,7 @@ const EmptyState = ({ icon: Icon, message, action }: { icon: React.ElementType; 
   </div>
 );
 
-export default function LibraryPage() {
+function LibraryContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -402,3 +402,10 @@ export default function LibraryPage() {
   );
 }
 
+export default function LibraryPage() {
+  return (
+    <Suspense fallback={null}>
+      <LibraryContent />
+    </Suspense>
+  );
+}

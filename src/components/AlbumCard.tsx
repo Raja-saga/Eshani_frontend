@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Play, Heart, Clock, Calendar } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Heart, Clock, Calendar, LogIn } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatDuration } from '@/utils/helpers';
 import usePlayerStore from '@/store/playerStore';
 import useLibraryStore from '@/store/libraryStore';
 import { Track as StoreTrack } from '@/types';
+import { useUser } from '@clerk/nextjs';
 
 interface AlbumCardProps {
   id: string;
@@ -80,12 +81,21 @@ const AlbumCard: React.FC<AlbumCardProps> = ({
   playOnClick = false,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [authBlocked, setAuthBlocked] = useState(false);
+  const [authAction, setAuthAction] = useState('');
 
   const { playTrack } = usePlayerStore();
   const { toggleSaveAlbum, isAlbumSaved } = useLibraryStore();
+  const { isSignedIn } = useUser();
   const isLiked = isAlbumSaved(id);
 
   const playSong = () => {
+    if (!isSignedIn) {
+      setAuthAction('Sign in to play');
+      setAuthBlocked(true);
+      setTimeout(() => setAuthBlocked(false), 2500);
+      return;
+    }
     const storeTrack: StoreTrack = {
       id,
       title,
@@ -112,6 +122,12 @@ const AlbumCard: React.FC<AlbumCardProps> = ({
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!isSignedIn) {
+      setAuthAction('Sign in to like');
+      setAuthBlocked(true);
+      setTimeout(() => setAuthBlocked(false), 2500);
+      return;
+    }
     toggleSaveAlbum(id);
     onLike?.();
   };
@@ -134,6 +150,31 @@ const AlbumCard: React.FC<AlbumCardProps> = ({
       >
         {/* Image Container */}
         <div className="relative mb-4 overflow-hidden rounded-2xl aspect-square bg-[#181818]">
+          {/* Auth gate overlay */}
+          <AnimatePresence>
+            {authBlocked && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 rounded-2xl backdrop-blur-sm"
+              >
+                <div className="flex flex-col items-center gap-2 px-4 py-3 bg-[#111111] border border-[rgba(255,255,255,0.15)] rounded-xl shadow-xl">
+                  <div className="flex items-center gap-2">
+                    <LogIn className="w-3.5 h-3.5 text-[#D40000]" />
+                    <p className="text-xs text-white font-medium">{authAction}</p>
+                  </div>
+                  <Link
+                    href="/sign-in"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-xs text-[#D40000] font-semibold hover:underline"
+                  >
+                    Sign In →
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <Image
             src={image}
             alt={`${title} album artwork`}

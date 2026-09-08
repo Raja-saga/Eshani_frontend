@@ -11,7 +11,6 @@ import {
   X,
   Crown,
   Compass,
-  Home,
   Library,
   Music2,
   LogIn,
@@ -26,7 +25,6 @@ import useSubscriptionStore from '@/store/subscriptionStore';
 import { Track as StoreTrack } from '@/types';
 
 const NAV_LINKS = [
-  { label: 'Home', href: '/', icon: Home },
   { label: 'Discover', href: '/discover', icon: Compass },
   { label: 'Library', href: '/library', icon: Library },
   { label: 'Eshani', href: '/eshani', icon: Music2 },
@@ -53,7 +51,7 @@ const PremiumNavbar: React.FC<PremiumNavbarProps> = ({ className = '' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeLink, setActiveLink] = useState('Home');
+  const [activeLink, setActiveLink] = useState('Discover');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);

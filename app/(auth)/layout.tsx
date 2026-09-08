@@ -28,11 +28,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         {/* Content */}
         <div className="relative z-10 flex flex-col h-full p-12">
-          {/* Logo */}
-          <Link href="/" aria-label="ESHANI Home">
-            <EshaniLogo width={120} height={32} className="text-white" />
-          </Link>
-
           {/* Quote */}
           <div className="mt-auto space-y-4">
             <div className="h-1 w-12 bg-[#D40000] rounded-full" />

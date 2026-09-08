@@ -12,12 +12,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Music2, TrendingUp, Headphones } from 'lucide-react';
+import { Play, Pause, Music2, TrendingUp, Headphones, LogIn } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Track } from '@/data/mockData';
 import { Track as StoreTrack } from '@/types';
 import usePlayerStore from '@/store/playerStore';
 import { formatDuration } from '@/utils/helpers';
+import { useUser } from '@clerk/nextjs';
 
 interface FeaturedSongBannerProps {
   songs: Track[];
@@ -25,7 +27,9 @@ interface FeaturedSongBannerProps {
 
 const FeaturedSongBanner: React.FC<FeaturedSongBannerProps> = ({ songs }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [authBlocked, setAuthBlocked] = useState(false);
   const { playTrack, setQueue, currentTrack, isPlaying, setIsPlaying } = usePlayerStore();
+  const { isSignedIn } = useUser();
 
   // Keep the featured banner in sync when the player advances tracks via next/prev
   useEffect(() => {
@@ -45,6 +49,11 @@ const FeaturedSongBanner: React.FC<FeaturedSongBannerProps> = ({ songs }) => {
   };
 
   const handlePlay = () => {
+    if (!isSignedIn) {
+      setAuthBlocked(true);
+      setTimeout(() => setAuthBlocked(false), 2800);
+      return;
+    }
     const storeTrack: StoreTrack = {
       id: featured.id,
       title: featured.title,
@@ -66,6 +75,11 @@ const FeaturedSongBanner: React.FC<FeaturedSongBannerProps> = ({ songs }) => {
   };
 
   const handlePlayAll = () => {
+    if (!isSignedIn) {
+      setAuthBlocked(true);
+      setTimeout(() => setAuthBlocked(false), 2800);
+      return;
+    }
     const queue: StoreTrack[] = songs.map((s) => ({
       id: s.id,
       title: s.title,
@@ -85,6 +99,30 @@ const FeaturedSongBanner: React.FC<FeaturedSongBannerProps> = ({ songs }) => {
 
   return (
     <div className="relative overflow-hidden rounded-3xl" role="region" aria-label="Featured Songs">
+      {/* Auth gate overlay */}
+      <AnimatePresence>
+        {authBlocked && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-20"
+          >
+            <div className="flex items-center gap-3 px-5 py-3 bg-[#111111] border border-[rgba(255,255,255,0.15)] rounded-2xl shadow-2xl backdrop-blur-md">
+              <LogIn className="w-4 h-4 text-[#D40000] flex-shrink-0" />
+              <p className="text-sm text-white font-medium">Sign in to play songs</p>
+              <Link
+                href="/sign-in"
+                className="text-sm text-[#D40000] font-semibold hover:underline whitespace-nowrap"
+              >
+                Sign In →
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Blurred background */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -204,6 +242,11 @@ const FeaturedSongBanner: React.FC<FeaturedSongBannerProps> = ({ songs }) => {
                 transition={{ duration: 0.35, delay: i * 0.06 }}
                 onClick={() => {
                   setActiveIndex(i);
+                  if (!isSignedIn) {
+                    setAuthBlocked(true);
+                    setTimeout(() => setAuthBlocked(false), 2800);
+                    return;
+                  }
                   const storeTrack: StoreTrack = {
                     id: song.id,
                     title: song.title,

@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Play, Music2, ListMusic, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Music2, ListMusic, Loader2, LogIn } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import usePlayerStore from '@/store/playerStore';
 import type { Track } from '@/types';
+import { useUser } from '@clerk/nextjs';
 
 export interface PlaylistCardItem {
   id: string;
@@ -27,11 +28,18 @@ interface PlaylistCardProps {
 const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, onPlay, index = 0 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [authBlocked, setAuthBlocked] = useState(false);
   const { playTrack, setQueue } = usePlayerStore();
+  const { isSignedIn } = useUser();
 
   const handlePlay = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!isSignedIn) {
+      setAuthBlocked(true);
+      setTimeout(() => setAuthBlocked(false), 2500);
+      return;
+    }
     if (isLoading) return;
 
     setIsLoading(true);
@@ -84,6 +92,31 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, onPlay, index = 0
       <Link href={`/playlists/${playlist.id}`} className="block" aria-label={`Open playlist: ${playlist.title}`}>
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden rounded-2xl mb-4 bg-[#181818]">
+          {/* Auth gate overlay */}
+          <AnimatePresence>
+            {authBlocked && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 rounded-2xl backdrop-blur-sm"
+              >
+                <div className="flex flex-col items-center gap-2 px-4 py-3 bg-[#111111] border border-[rgba(255,255,255,0.15)] rounded-xl shadow-xl text-center">
+                  <div className="flex items-center gap-2">
+                    <LogIn className="w-3.5 h-3.5 text-[#D40000]" />
+                    <p className="text-xs text-white font-medium">Sign in to play</p>
+                  </div>
+                  <Link
+                    href="/sign-in"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-xs text-[#D40000] font-semibold hover:underline"
+                  >
+                    Sign In →
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           {playlist.image ? (
             <Image
               src={playlist.image}

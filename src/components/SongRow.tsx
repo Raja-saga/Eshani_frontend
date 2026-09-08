@@ -2,14 +2,16 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Heart, Plus, Check, ListMusic, Crown } from 'lucide-react';
+import { Play, Pause, Heart, Plus, Check, ListMusic, Crown, LogIn } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Track } from '@/data/mockData';
 import { formatDuration } from '@/utils/helpers';
 import usePlayerStore from '@/store/playerStore';
 import useLibraryStore from '@/store/libraryStore';
 import useSubscriptionStore from '@/store/subscriptionStore';
 import { Track as StoreTrack } from '@/types';
+import { useUser } from '@clerk/nextjs';
 
 interface SongRowProps {
   track: Track;
@@ -24,11 +26,14 @@ const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false, 
   const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
   const [addedTo, setAddedTo] = useState<string | null>(null);
   const [premiumBlocked, setPremiumBlocked] = useState(false);
+  const [authBlocked, setAuthBlocked] = useState(false);
+  const [authMessage, setAuthMessage] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { currentTrack, isPlaying, playTrack, setIsPlaying, setQueue } = usePlayerStore();
   const { localPlaylists, addSongToPlaylist } = useLibraryStore();
   const { isPremium } = useSubscriptionStore();
+  const { isSignedIn } = useUser();
 
   const isCurrentTrack = currentTrack?.id === track.id;
   const isThisPlaying = isCurrentTrack && isPlaying;
@@ -45,6 +50,12 @@ const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false, 
   }, [showPlaylistMenu]);
 
   const handlePlay = () => {
+    if (!isSignedIn) {
+      setAuthMessage('Sign in to play songs');
+      setAuthBlocked(true);
+      setTimeout(() => setAuthBlocked(false), 2500);
+      return;
+    }
     if (track.isPremium && !isPremium) {
       setPremiumBlocked(true);
       setTimeout(() => setPremiumBlocked(false), 2200);
@@ -81,6 +92,12 @@ const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false, 
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isSignedIn) {
+      setAuthMessage('Sign in to like songs');
+      setAuthBlocked(true);
+      setTimeout(() => setAuthBlocked(false), 2500);
+      return;
+    }
     onLike?.();
   };
 
@@ -108,6 +125,30 @@ const SongRow: React.FC<SongRowProps> = ({ track, index, onLike, liked = false, 
       aria-label={`${isThisPlaying ? 'Pause' : 'Play'} ${track.title} by ${track.artist}`}
       onKeyDown={(e) => e.key === 'Enter' && handlePlay()}
     >
+      {/* Auth gate overlay */}
+      <AnimatePresence>
+        {authBlocked && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 rounded-xl backdrop-blur-sm"
+          >
+            <div className="flex items-center gap-2.5 px-4 py-2.5 bg-[#111111] border border-[rgba(255,255,255,0.15)] rounded-xl shadow-xl">
+              <LogIn className="w-3.5 h-3.5 text-[#D40000] flex-shrink-0" />
+              <p className="text-xs text-white font-medium">{authMessage}</p>
+              <Link
+                href="/sign-in"
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs text-[#D40000] font-semibold hover:underline ml-1 whitespace-nowrap"
+              >
+                Sign In →
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Premium gate overlay */}
       <AnimatePresence>
         {premiumBlocked && (

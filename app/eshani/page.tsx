@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -159,121 +159,155 @@ export default function EshaniPage() {
     playTrack(queue[0]);
   }, [setQueue, playTrack, isLiked]);
 
-  const handlePlay = useCallback((label: string) => {
-    console.info('Play:', label);
-  }, []);
-
   return (
     <div className="bg-[#000000] text-[#FFFFFF] overflow-hidden">
 
-      {/* â"€â"€ HERO BANNER â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
-      <section className="relative min-h-[70vh] flex items-end overflow-hidden bg-[#000000]">
-        {/* Background image */}
-        <div className="absolute inset-0">
+      {/* ── HERO BANNER — PROTOTYPE STYLE ──────────────────────────────── */}
+      <section className="relative min-h-[88vh] flex items-center overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #1a0000 0%, #2d0000 40%, #8B0000 100%)' }}
+      >
+        {/* Dark red vignette overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#000000] via-[rgba(0,0,0,0.7)] to-transparent z-[1]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#000000] via-transparent to-transparent z-[1]" />
+
+        {/* Animated red glow orb */}
+        <motion.div
+          animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.15, 1] }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute bottom-0 left-[-5%] w-[700px] h-[500px] rounded-full pointer-events-none z-[1]"
+          style={{ background: 'radial-gradient(ellipse, rgba(212,0,0,0.25) 0%, transparent 70%)' }}
+          aria-hidden="true"
+        />
+
+        {/* Anime music symbols image — top left decorative */}
+        <div className="absolute top-0 left-0 w-[55%] h-full pointer-events-none z-[2] overflow-hidden">
           <Image
-            src={eshaniHeroImage || ESHANI_PHOTOS.hero}
+            src="/anime-music-symbols.jpg"
+            alt=""
+            fill
+            className="object-cover object-left opacity-15 mix-blend-screen"
+            sizes="55vw"
+            aria-hidden="true"
+            unoptimized
+          />
+        </div>
+
+        {/* Artist photo — right side */}
+        <div className="absolute right-0 top-0 bottom-0 w-[55%] lg:w-[50%] pointer-events-none z-[2]">
+          <Image
+            src="/eshani-artist.png"
             alt="ESHANI"
             fill
             priority
             unoptimized
-            className="object-cover object-top opacity-60"
-            sizes="100vw"
+            className="object-cover object-top"
+            sizes="55vw"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#000000] via-[rgba(0,0,0,0.5)] to-[rgba(0,0,0,0.2)]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#000000] via-transparent to-transparent" />
+          {/* Fade the artist photo to blend with background on left edge */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a0000] via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#000000] via-transparent to-transparent" />
         </div>
 
-        {/* Animated glow */}
-        <motion.div
-          animate={{ opacity: [0.3, 0.55, 0.3], scale: [1, 1.08, 1] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute bottom-0 left-0 w-[600px] h-[400px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse, rgba(212,0,0,0.2) 0%, transparent 70%)' }}
-          aria-hidden="true"
-        />
+        {/* ── LEFT PANEL — Content ────────────────────────────── */}
+        <div className="relative z-10 container-premium w-full py-24 lg:py-32">
+          <div className="max-w-xl">
 
-        {/* Content */}
-        <div className="relative z-10 container-premium pb-16 pt-32 w-full">
-          <div className="max-w-2xl">
-            {/* Verified badge */}
+            {/* ANIME MUSIC SYMBOLS above name */}
             <motion.div
-              initial={{ opacity: 0, y: -12 }}
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="flex items-center gap-2 mb-4"
+              transition={{ duration: 0.7 }}
+              className="flex items-center gap-3 mb-4"
+              aria-hidden="true"
             >
-              <CheckCircle2 className="w-4 h-4 text-[#D40000]" />
-              <span className="text-xs font-semibold tracking-[0.18em] uppercase text-[#D40000]">
-                Verified Artist
-              </span>
+              {/* Animated floating music notes — anime style */}
+              {[
+                { symbol: '♩', delay: 0, x: 0, size: 'text-3xl' },
+                { symbol: '♪', delay: 0.3, x: 5, size: 'text-4xl' },
+                { symbol: '♫', delay: 0.6, x: -3, size: 'text-2xl' },
+                { symbol: '♬', delay: 0.9, x: 8, size: 'text-3xl' },
+              ].map(({ symbol, delay, x, size }, i) => (
+                <motion.span
+                  key={i}
+                  animate={{
+                    y: [0, -12, 0],
+                    x: [0, x, 0],
+                    rotate: [0, i % 2 === 0 ? 15 : -15, 0],
+                    filter: [
+                      'drop-shadow(0 0 6px rgba(212,0,0,0.8))',
+                      'drop-shadow(0 0 16px rgba(255,80,80,1))',
+                      'drop-shadow(0 0 6px rgba(212,0,0,0.8))',
+                    ],
+                  }}
+                  transition={{ duration: 2.5 + i * 0.4, delay, repeat: Infinity, ease: 'easeInOut' }}
+                  className={`${size} font-black text-white`}
+                  style={{ textShadow: '0 0 20px rgba(212,0,0,0.9), 0 0 40px rgba(212,0,0,0.5)' }}
+                >
+                  {symbol}
+                </motion.span>
+              ))}
             </motion.div>
 
-            {/* Name */}
+            {/* ESHANI large handwriting-style name */}
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.65, delay: 0.1 }}
-              className="font-black text-[#FFFFFF] leading-none mb-4"
+              initial={{ opacity: 0, x: -40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.1, ease: [0.4, 0, 0.2, 1] }}
+              className="font-black text-white leading-none mb-5 select-none"
               style={{
                 fontFamily: 'var(--font-poppins, sans-serif)',
-                fontSize: 'clamp(3.5rem, 10vw, 7rem)',
+                fontSize: 'clamp(4.5rem, 13vw, 9rem)',
+                textShadow: '4px 4px 0px rgba(0,0,0,0.5), 0 0 60px rgba(212,0,0,0.3)',
+                letterSpacing: '-0.02em',
               }}
             >
               ESHANI
             </motion.h1>
 
-            {/* Genre tags */}
+            {/* Quote */}
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="text-[1.15rem] lg:text-[1.35rem] text-[#D9D9D9] font-medium mb-6 leading-snug italic"
+              style={{ textShadow: '0 2px 12px rgba(0,0,0,0.6)' }}
+            >
+              Culture isn&apos;t where I fit. It&apos;s what I am
+            </motion.p>
+
+            {/* Tags: Singer-Songwriter, Vocalist, Lyricist, Independent Artist */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.25 }}
-              className="flex flex-wrap gap-2 mb-6"
+              transition={{ delay: 0.4 }}
+              className="flex flex-wrap gap-2 mb-8"
             >
-              {['Electronic', 'Alternative', 'Indie Pop', 'R&B'].map((g) => (
+              {['Singer-Songwriter', 'Vocalist', 'Lyricist', 'Independent Artist'].map((tag) => (
                 <span
-                  key={g}
-                  className="px-3 py-1 rounded-full text-xs font-medium border border-white/10 text-[#9CA3AF] bg-white/[0.04]"
+                  key={tag}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium border border-[rgba(255,255,255,0.2)] text-[#D9D9D9] bg-[rgba(0,0,0,0.4)] backdrop-blur-sm"
                 >
-                  {g}
+                  {tag}
                 </span>
               ))}
             </motion.div>
 
-            {/* Stats row */}
+            {/* CTA Buttons: PLAY NOW + FOLLOW */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.35 }}
-              className="flex flex-wrap gap-8 mb-8"
-            >
-              {STATS.map((s) => (
-                <div key={s.label}>
-                  <p
-                    className="text-2xl font-bold text-white"
-                    style={{ fontFamily: 'var(--font-poppins, sans-serif)' }}
-                  >
-                    {s.value}
-                  </p>
-                  <p className="text-xs text-[#9CA3AF]">{s.label}</p>
-                </div>
-              ))}
-            </motion.div>
-
-            {/* CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="flex flex-wrap gap-3"
+              transition={{ delay: 0.5 }}
+              className="flex flex-wrap gap-4"
             >
               <motion.button
-                whileHover={{ scale: 1.04, boxShadow: '0 0 28px rgba(212,0,0,0.4)' }}
-                whileTap={{ scale: 0.96 }}
+                whileHover={{ scale: 1.06, boxShadow: '0 0 36px rgba(212,0,0,0.55)' }}
+                whileTap={{ scale: 0.95 }}
                 onClick={handlePlayDiscography}
-                className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-[#D40000] text-white font-semibold rounded-2xl hover:bg-[#8B1111] transition-all text-sm"
+                className="inline-flex items-center gap-3 px-8 py-4 bg-[#D40000] text-white font-bold rounded-2xl hover:bg-[#8B1111] transition-all text-sm uppercase tracking-wider shadow-xl shadow-[#D40000]/30"
+                aria-label="Play now"
               >
-                <Play className="w-4 h-4 fill-current" />
-                Play Discography
+                <Play className="w-5 h-5 fill-current" />
+                PLAY NOW
               </motion.button>
 
               <Link
@@ -282,12 +316,13 @@ export default function EshaniPage() {
                 rel="noopener noreferrer"
               >
                 <motion.span
-                  whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.08)' }}
-                  whileTap={{ scale: 0.97 }}
-                  className="inline-flex items-center gap-2.5 px-6 py-3.5 border border-white/15 text-white font-semibold rounded-2xl glass-effect transition-all text-sm"
+                  whileHover={{ scale: 1.04, backgroundColor: 'rgba(255,255,255,0.12)' }}
+                  whileTap={{ scale: 0.96 }}
+                  className="inline-flex items-center gap-3 px-8 py-4 border-2 border-[rgba(255,255,255,0.25)] text-white font-bold rounded-2xl backdrop-blur-sm transition-all text-sm uppercase tracking-wider"
+                  style={{ background: 'rgba(0,0,0,0.35)' }}
                 >
-                  <Headphones className="w-4 h-4" />
-                  Follow
+                  <Headphones className="w-5 h-5" />
+                  FOLLOW
                 </motion.span>
               </Link>
             </motion.div>
@@ -296,8 +331,8 @@ export default function EshaniPage() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="flex gap-2 mt-6"
+              transition={{ delay: 0.65 }}
+              className="flex gap-2 mt-7"
             >
               {SOCIAL_LINKS.map(({ icon: Icon, href, label }) => (
                 <a
@@ -306,7 +341,7 @@ export default function EshaniPage() {
                   aria-label={label}
                   target={href.startsWith('mailto') ? undefined : '_blank'}
                   rel={href.startsWith('mailto') ? undefined : 'noopener noreferrer'}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[#9CA3AF] hover:text-[#D40000] hover:border-[rgba(212,0,0,0.2)] transition-all text-xs font-medium"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] text-[#9CA3AF] hover:text-[#D40000] hover:border-[rgba(212,0,0,0.3)] transition-all text-xs font-medium backdrop-blur-sm"
                 >
                   <Icon className="w-3.5 h-3.5" />
                   {label}
